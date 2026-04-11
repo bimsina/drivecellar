@@ -1,0 +1,27 @@
+{
+  "projectName": "drivecellar",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "pnpm",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "sqlite"
+    }
+  },
+  "envVarValues": {},
+  "git": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "eslint",
+    "compiler",
+    "drizzle",
+    "shadcn",
+    "tRPC",
+    "tanstack-query",
+    "better-auth"
+  ]
+}

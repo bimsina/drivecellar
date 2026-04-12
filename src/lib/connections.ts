@@ -85,6 +85,10 @@ export const getConnectionInputSchema = z.object({
   id: z.string().min(1),
 })
 
+export const testConnectionConfigInputSchema = z.object({
+  config: connectionConfigSchema,
+})
+
 export type ConnectionMetadataInput = z.infer<typeof connectionMetadataSchema>
 export type S3Config = z.infer<typeof s3ConfigSchema>
 export type LocalConfig = z.infer<typeof localConfigSchema>
@@ -101,12 +105,3 @@ export type ClientConnectionConfig = z.infer<
   typeof clientConnectionConfigSchema
 >
 export type ConnectionListItem = z.infer<typeof connectionListItemSchema>
-
-export function serializeConnectionConfig(config: ConnectionConfig): string {
-  return JSON.stringify(connectionConfigSchema.parse(config))
-}
-
-export function parseConnectionConfig(rawConfig: string): ConnectionConfig {
-  const parsed = JSON.parse(rawConfig) as unknown
-  return connectionConfigSchema.parse(parsed)
-}

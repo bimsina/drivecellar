@@ -1,5 +1,5 @@
 import { getConnectionByIdForOrganization } from '#/lib/connection-repository.ts'
-import { parseConnectionConfig } from '#/lib/connections.ts'
+import { parseConnectionConfig } from '#/lib/connection-config-storage.ts'
 
 import {
   createStorageProvider,

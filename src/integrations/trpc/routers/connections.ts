@@ -9,15 +9,19 @@ import {
   updateConnectionRow,
 } from '#/lib/connection-repository.ts'
 import { clearCachedProvider } from '#/lib/storage/index.ts'
+import { testConnectionConfig } from '#/lib/storage/test-connection.ts'
 import type { ConnectionRow } from '#/lib/connection-repository.ts'
+import {
+  parseConnectionConfig,
+  serializeConnectionConfig,
+} from '#/lib/connection-config-storage.ts'
 import {
   connectionListItemSchema,
   createConnectionInputSchema,
   deleteConnectionInputSchema,
   getConnectionInputSchema,
   listConnectionsInputSchema,
-  parseConnectionConfig,
-  serializeConnectionConfig,
+  testConnectionConfigInputSchema,
   updateConnectionInputSchema,
 } from '#/lib/connections.ts'
 import type {
@@ -109,6 +113,25 @@ export const connectionsRouter = createTRPCRouter({
       }
 
       return toClientConnection(connection)
+    }),
+
+  testConfig: organizationProcedure
+    .input(testConnectionConfigInputSchema)
+    .output(z.object({ ok: z.literal(true) }))
+    .mutation(async ({ input }) => {
+      try {
+        await testConnectionConfig(input.config)
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Could not verify this storage connection.'
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message,
+        })
+      }
+      return { ok: true as const }
     }),
 
   create: organizationProcedure

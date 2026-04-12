@@ -66,6 +66,10 @@ export function ConnectionsFeature({
     }),
   )
 
+  const testConnectionMutation = useMutation(
+    trpc.connections.testConfig.mutationOptions(),
+  )
+
   async function handleCreateConnection(input: CreateConnectionInput) {
     try {
       const connection = await createConnectionMutation.mutateAsync(input)
@@ -117,6 +121,9 @@ export function ConnectionsFeature({
       onCreate={handleCreateConnection}
       onDelete={handleDeleteConnection}
       onUpdate={handleUpdateConnection}
+      testBeforeCreate={async (config) => {
+        await testConnectionMutation.mutateAsync({ config })
+      }}
     />
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import type {
+  ConnectionConfig,
   CreateConnectionInput,
   ConnectionListItem,
   UpdateConnectionInput,
@@ -18,6 +19,7 @@ type ConnectionsWorkspaceProps = {
   onCreate: (input: CreateConnectionInput) => Promise<void>
   onUpdate: (input: UpdateConnectionInput) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  testBeforeCreate?: (config: ConnectionConfig) => Promise<void>
 }
 
 export function ConnectionsWorkspace({
@@ -29,6 +31,7 @@ export function ConnectionsWorkspace({
   onCreate,
   onUpdate,
   onDelete,
+  testBeforeCreate,
 }: ConnectionsWorkspaceProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingConnection, setEditingConnection] =
@@ -56,6 +59,7 @@ export function ConnectionsWorkspace({
           mode="create"
           open={createOpen}
           onOpenChange={setCreateOpen}
+          testBeforeCreate={testBeforeCreate}
           onSubmit={async (input) => {
             await onCreate(input as CreateConnectionInput)
           }}

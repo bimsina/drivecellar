@@ -5,10 +5,12 @@ export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
     BETTER_AUTH_SECRET: z.string().min(1),
+    CONNECTION_ENCRYPTION_KEY: z.string().min(32),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    CONNECTION_ENCRYPTION_KEY: process.env.CONNECTION_ENCRYPTION_KEY,
   },
   emptyStringAsUndefined: true,
   skipValidation:

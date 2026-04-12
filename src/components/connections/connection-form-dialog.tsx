@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { Separator } from '#/components/ui/separator'
+import { cn } from '#/lib/utils'
 import { Switch } from '#/components/ui/switch'
 import { Textarea } from '#/components/ui/textarea'
 import {
@@ -36,6 +37,7 @@ import {
   updateConnectionInputSchema,
 } from '#/lib/connections.ts'
 import type {
+  ConnectionConfig,
   CreateConnectionInput,
   ConnectionListItem,
   UpdateConnectionInput,
@@ -46,6 +48,8 @@ type ConnectionFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   connection?: ConnectionListItem | null
+  /** When set, create flow runs this before saving; on failure the drive is not created. */
+  testBeforeCreate?: (config: ConnectionConfig) => Promise<void>
   onSubmit: (
     input: CreateConnectionInput | UpdateConnectionInput,
   ) => Promise<void>
@@ -615,15 +619,20 @@ function S3StorageFields({
   )
 }
 
+type SubmitAlert =
+  | { kind: 'verify'; message: string }
+  | { kind: 'save'; message: string }
+
 export function ConnectionFormDialog({
   mode,
   open,
   onOpenChange,
   connection,
+  testBeforeCreate,
   onSubmit,
 }: ConnectionFormDialogProps) {
   const [step, setStep] = useState<1 | 2>(1)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitAlert, setSubmitAlert] = useState<SubmitAlert | null>(null)
   const isEditMode = mode === 'edit'
   const defaultValues = isEditMode
     ? getFormValuesFromConnection(connection)
@@ -632,7 +641,7 @@ export function ConnectionFormDialog({
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      setSubmitError(null)
+      setSubmitAlert(null)
 
       const input = isEditMode ? toUpdateInput(value) : toCreateInput(value)
       const result = isEditMode
@@ -640,8 +649,24 @@ export function ConnectionFormDialog({
         : createConnectionInputSchema.safeParse(input)
 
       if (!result.success) {
-        setSubmitError('Please fix the highlighted fields and try again.')
+        setSubmitAlert({
+          kind: 'save',
+          message: 'Please fix the highlighted fields and try again.',
+        })
         return
+      }
+
+      if (!isEditMode && testBeforeCreate) {
+        try {
+          await testBeforeCreate((result.data as CreateConnectionInput).config)
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Could not verify this storage connection.'
+          setSubmitAlert({ kind: 'verify', message })
+          return
+        }
       }
 
       try {
@@ -652,16 +677,19 @@ export function ConnectionFormDialog({
           error instanceof Error
             ? error.message
             : 'Unable to save the connection.'
-        setSubmitError(message)
+        setSubmitAlert({ kind: 'save', message })
       }
     },
     onSubmitInvalid: () => {
-      setSubmitError('Please fix the highlighted fields and try again.')
+      setSubmitAlert({
+        kind: 'save',
+        message: 'Please fix the highlighted fields and try again.',
+      })
     },
   })
 
   async function handleContinue() {
-    setSubmitError(null)
+    setSubmitAlert(null)
     await form.validateAllFields('submit')
 
     if (isStepOneValid(form.state.values)) {
@@ -719,7 +747,7 @@ export function ConnectionFormDialog({
                 form={form}
                 connection={connection}
                 onTypeChange={() => {
-                  setSubmitError(null)
+                  setSubmitAlert(null)
                 }}
               />
             </section>
@@ -762,10 +790,28 @@ export function ConnectionFormDialog({
             </form.Subscribe>
           )}
 
-          {submitError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Could not save connection</AlertTitle>
-              <AlertDescription>{submitError}</AlertDescription>
+          {submitAlert ? (
+            <Alert
+              variant={submitAlert.kind === 'save' ? 'destructive' : 'default'}
+              className={cn(
+                submitAlert.kind === 'verify' &&
+                  'border-amber-500/50 bg-amber-500/[0.07] text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50',
+              )}
+            >
+              <AlertTitle>
+                {submitAlert.kind === 'verify'
+                  ? 'Storage could not be reached'
+                  : 'Could not save connection'}
+              </AlertTitle>
+              <AlertDescription
+                className={
+                  submitAlert.kind === 'verify'
+                    ? 'text-amber-950/90 dark:text-amber-50/90'
+                    : undefined
+                }
+              >
+                {submitAlert.message}
+              </AlertDescription>
             </Alert>
           ) : null}
 
@@ -774,7 +820,7 @@ export function ConnectionFormDialog({
               type="button"
               variant="outline"
               onClick={() => {
-                setSubmitError(null)
+                setSubmitAlert(null)
                 onOpenChange(false)
               }}
             >
@@ -806,7 +852,7 @@ export function ConnectionFormDialog({
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setSubmitError(null)
+                    setSubmitAlert(null)
                     setStep(1)
                   }}
                 >

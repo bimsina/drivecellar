@@ -161,7 +161,8 @@ export function UploadQueuePanel({
                         </p>
                       </div>
 
-                      {upload.status === 'success' || upload.status === 'error' ? (
+                      {upload.status === 'success' ||
+                      upload.status === 'error' ? (
                         <Button
                           type="button"
                           size="icon-xs"

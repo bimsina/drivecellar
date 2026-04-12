@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrganizationOrganizationViewRouteImport } from './routes/organization/$organizationView'
-import { Route as CIdRouteImport } from './routes/c/$id'
 import { Route as AuthAuthViewRouteImport } from './routes/auth/$authView'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
+import { Route as CIdRouteRouteImport } from './routes/c/$id/route'
+import { Route as CIdIndexRouteImport } from './routes/c/$id/index'
+import { Route as CIdSplatRouteImport } from './routes/c/$id/$'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiFilesUploadRouteImport } from './routes/api/files/upload'
 import { Route as ApiFilesDownloadRouteImport } from './routes/api/files/download'
@@ -30,11 +32,6 @@ const OrganizationOrganizationViewRoute =
     path: '/organization/$organizationView',
     getParentRoute: () => rootRouteImport,
   } as any)
-const CIdRoute = CIdRouteImport.update({
-  id: '/c/$id',
-  path: '/c/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthAuthViewRoute = AuthAuthViewRouteImport.update({
   id: '/auth/$authView',
   path: '/auth/$authView',
@@ -44,6 +41,21 @@ const AccountAccountViewRoute = AccountAccountViewRouteImport.update({
   id: '/account/$accountView',
   path: '/account/$accountView',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CIdRouteRoute = CIdRouteRouteImport.update({
+  id: '/c/$id',
+  path: '/c/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CIdIndexRoute = CIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CIdRouteRoute,
+} as any)
+const CIdSplatRoute = CIdSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => CIdRouteRoute,
 } as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
@@ -68,79 +80,89 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/c/$id': typeof CIdRouteRouteWithChildren
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
   '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/c/$id/$': typeof CIdSplatRoute
+  '/c/$id/': typeof CIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
   '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/c/$id/$': typeof CIdSplatRoute
+  '/c/$id': typeof CIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/c/$id': typeof CIdRouteRouteWithChildren
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
   '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/c/$id/$': typeof CIdSplatRoute
+  '/c/$id/': typeof CIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/c/$id'
     | '/account/$accountView'
     | '/auth/$authView'
-    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
     | '/api/files/upload'
     | '/api/trpc/$'
+    | '/c/$id/$'
+    | '/c/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account/$accountView'
     | '/auth/$authView'
-    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
     | '/api/files/upload'
     | '/api/trpc/$'
+    | '/c/$id/$'
+    | '/c/$id'
   id:
     | '__root__'
     | '/'
+    | '/c/$id'
     | '/account/$accountView'
     | '/auth/$authView'
-    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
     | '/api/files/upload'
     | '/api/trpc/$'
+    | '/c/$id/$'
+    | '/c/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CIdRouteRoute: typeof CIdRouteRouteWithChildren
   AccountAccountViewRoute: typeof AccountAccountViewRoute
   AuthAuthViewRoute: typeof AuthAuthViewRoute
-  CIdRoute: typeof CIdRoute
   OrganizationOrganizationViewRoute: typeof OrganizationOrganizationViewRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFilesDownloadRoute: typeof ApiFilesDownloadRoute
@@ -164,13 +186,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationOrganizationViewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/c/$id': {
-      id: '/c/$id'
-      path: '/c/$id'
-      fullPath: '/c/$id'
-      preLoaderRoute: typeof CIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/$authView': {
       id: '/auth/$authView'
       path: '/auth/$authView'
@@ -184,6 +199,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/account/$accountView'
       preLoaderRoute: typeof AccountAccountViewRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/c/$id': {
+      id: '/c/$id'
+      path: '/c/$id'
+      fullPath: '/c/$id'
+      preLoaderRoute: typeof CIdRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$id/': {
+      id: '/c/$id/'
+      path: '/'
+      fullPath: '/c/$id/'
+      preLoaderRoute: typeof CIdIndexRouteImport
+      parentRoute: typeof CIdRouteRoute
+    }
+    '/c/$id/$': {
+      id: '/c/$id/$'
+      path: '/$'
+      fullPath: '/c/$id/$'
+      preLoaderRoute: typeof CIdSplatRouteImport
+      parentRoute: typeof CIdRouteRoute
     }
     '/api/trpc/$': {
       id: '/api/trpc/$'
@@ -216,11 +252,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CIdRouteRouteChildren {
+  CIdSplatRoute: typeof CIdSplatRoute
+  CIdIndexRoute: typeof CIdIndexRoute
+}
+
+const CIdRouteRouteChildren: CIdRouteRouteChildren = {
+  CIdSplatRoute: CIdSplatRoute,
+  CIdIndexRoute: CIdIndexRoute,
+}
+
+const CIdRouteRouteWithChildren = CIdRouteRoute._addFileChildren(
+  CIdRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CIdRouteRoute: CIdRouteRouteWithChildren,
   AccountAccountViewRoute: AccountAccountViewRoute,
   AuthAuthViewRoute: AuthAuthViewRoute,
-  CIdRoute: CIdRoute,
   OrganizationOrganizationViewRoute: OrganizationOrganizationViewRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFilesDownloadRoute: ApiFilesDownloadRoute,

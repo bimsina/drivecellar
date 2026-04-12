@@ -63,7 +63,9 @@ function hasWebStreamBody(
 }
 
 function isNodeReadable(value: unknown): value is Readable {
-  return typeof value === 'object' && value !== null && value instanceof Readable
+  return (
+    typeof value === 'object' && value !== null && value instanceof Readable
+  )
 }
 
 function isAsyncIterableBody(

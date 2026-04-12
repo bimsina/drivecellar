@@ -315,6 +315,14 @@ type FileListProps = {
   viewMode: FileListViewMode
   onViewModeChange: (mode: FileListViewMode) => void
   onNavigate: (path: string) => void
+  selectedFilePath?: string
+  selectedFileEntry: FileEntry | null
+  selectedFileLoading: boolean
+  selectedFileError: string | null
+  onSelectedFilePathChange: (
+    path: string | null,
+    options?: { replace?: boolean },
+  ) => void
 }
 
 export function FileList({
@@ -324,6 +332,11 @@ export function FileList({
   viewMode,
   onViewModeChange,
   onNavigate,
+  selectedFilePath,
+  selectedFileEntry,
+  selectedFileLoading,
+  selectedFileError,
+  onSelectedFilePathChange,
 }: FileListProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -332,7 +345,6 @@ export function FileList({
   const [renameValue, setRenameValue] = useState('')
   const [renameError, setRenameError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<FileEntry | null>(null)
-  const [detailEntry, setDetailEntry] = useState<FileEntry | null>(null)
   const [sortField, setSortField] = useState<ToolbarSortField>('name')
   const [sortAscending, setSortAscending] = useState(true)
 
@@ -363,7 +375,6 @@ export function FileList({
         await invalidateList()
         toast.success('Deleted.')
         setDeleteTarget(null)
-        setDetailEntry(null)
       },
       onError: (e) => {
         toast.error(e instanceof Error ? e.message : 'Delete failed.')
@@ -440,7 +451,7 @@ export function FileList({
           <FileCard
             connectionId={connectionId}
             entry={entry}
-            onOpen={() => setDetailEntry(entry)}
+            onOpen={() => onSelectedFilePathChange(entry.path)}
             onRename={() => openRename(entry)}
             onDelete={() => setDeleteTarget(entry)}
             onDownload={() => triggerDownload(entry)}
@@ -453,7 +464,7 @@ export function FileList({
             if (entry.isDirectory) {
               onNavigate(entry.path)
             } else {
-              setDetailEntry(entry)
+              onSelectedFilePathChange(entry.path)
             }
           }}
         >
@@ -504,7 +515,9 @@ export function FileList({
             </ContextMenuItem>
           ) : (
             <>
-              <ContextMenuItem onSelect={() => setDetailEntry(entry)}>
+              <ContextMenuItem
+                onSelect={() => onSelectedFilePathChange(entry.path)}
+              >
                 Open
               </ContextMenuItem>
               <ContextMenuItem onSelect={() => triggerDownload(entry)}>
@@ -718,14 +731,17 @@ export function FileList({
 
       <FileDetailDialog
         connectionId={connectionId}
-        entry={detailEntry}
-        open={detailEntry !== null}
+        entry={selectedFileEntry}
+        requestedPath={selectedFilePath ?? null}
+        loading={selectedFileLoading}
+        errorMessage={selectedFileError}
+        open={Boolean(selectedFilePath)}
         onOpenChange={(next) => {
-          if (!next) setDetailEntry(null)
+          if (!next) {
+            onSelectedFilePathChange(null, { replace: true })
+          }
         }}
         onDownload={triggerDownload}
-        onRename={openRename}
-        onDelete={setDeleteTarget}
       />
     </div>
   )

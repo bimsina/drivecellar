@@ -1,4 +1,4 @@
-import { Download, FileIcon, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { Download, FileIcon, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
@@ -23,36 +23,35 @@ function formatBytes(n: number | null) {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatDate(d: Date | null) {
-  if (!d) return '—'
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(d)
-  } catch {
-    return d.toString()
+function fallbackNameForPath(path: string | null | undefined) {
+  if (!path) {
+    return 'File'
   }
+
+  const parts = path.split('/').filter(Boolean)
+  return parts.at(-1) ?? 'File'
 }
 
 type FileDetailDialogProps = {
   connectionId: string
   entry: FileEntry | null
+  requestedPath?: string | null
+  loading?: boolean
+  errorMessage?: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onDownload: (entry: FileEntry) => void
-  onRename: (entry: FileEntry) => void
-  onDelete: (entry: FileEntry) => void
 }
 
 export function FileDetailDialog({
   connectionId,
   entry,
+  requestedPath,
+  loading = false,
+  errorMessage = null,
   open,
   onOpenChange,
   onDownload,
-  onRename,
-  onDelete,
 }: FileDetailDialogProps) {
   const [textBody, setTextBody] = useState<string | null>(null)
   const [textError, setTextError] = useState<string | null>(null)
@@ -109,8 +108,50 @@ export function FileDetailDialog({
     }
   }, [open, connectionId, entry])
 
-  if (!entry || entry.isDirectory) {
+  if (!open) {
     return null
+  }
+
+  if (!entry || entry.isDirectory) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          fullscreen
+          showCloseButton
+          className="flex min-h-0 flex-col overflow-hidden pt-14"
+        >
+          <div className="border-border flex shrink-0 items-center justify-between gap-3 border-b px-4 pt-1 pb-3 sm:pr-16">
+            <div className="min-w-0 flex-1 pr-2">
+              <DialogTitle className="text-left text-base leading-snug break-all sm:text-lg">
+                {fallbackNameForPath(requestedPath)}
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-left text-xs">
+                {requestedPath ?? 'Loading file details'}
+              </DialogDescription>
+            </div>
+          </div>
+
+          <div className="bg-muted/30 flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-8">
+            {loading ? (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Loader2 className="size-4 animate-spin" />
+                Loading file…
+              </div>
+            ) : (
+              <div className="flex max-w-sm flex-col items-center gap-3 text-center">
+                <FileIcon
+                  className="text-muted-foreground size-16 opacity-40"
+                  strokeWidth={1.25}
+                />
+                <p className="text-destructive text-sm">
+                  {errorMessage ?? 'Could not load this file.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   const src = buildDownloadUrl(connectionId, entry.path)
@@ -144,32 +185,6 @@ export function FileDetailDialog({
               <Download className="size-4" />
               Download
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => {
-                onOpenChange(false)
-                onRename(entry)
-              }}
-            >
-              <Pencil className="size-4" />
-              Rename
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
-              onClick={() => {
-                onOpenChange(false)
-                onDelete(entry)
-              }}
-            >
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
           </div>
         </div>
 
@@ -192,7 +207,7 @@ export function FileDetailDialog({
               ) : textError ? (
                 <p className="text-destructive text-sm">{textError}</p>
               ) : textBody != null ? (
-                <pre className="text-foreground border-border bg-background min-h-0 flex-1 overflow-auto rounded-md border p-4 text-xs leading-relaxed break-words whitespace-pre-wrap sm:text-sm">
+                <pre className="text-foreground border-border bg-background min-h-0 flex-1 overflow-auto rounded-md border p-4 text-xs leading-relaxed wrap-break-word whitespace-pre-wrap sm:text-sm">
                   {textBody}
                 </pre>
               ) : null}
@@ -206,21 +221,6 @@ export function FileDetailDialog({
               </p>
             </div>
           )}
-        </div>
-
-        <div className="border-border bg-card text-muted-foreground shrink-0 border-t px-4 py-3 text-xs">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1">
-            <span>
-              <span className="text-foreground/80">Modified</span>{' '}
-              {formatDate(entry.lastModified)}
-            </span>
-            <span className="text-border hidden sm:inline" aria-hidden>
-              ·
-            </span>
-            <span className="min-w-0 break-all">
-              <span className="text-foreground/80">Path</span> {entry.path}
-            </span>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

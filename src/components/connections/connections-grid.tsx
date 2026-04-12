@@ -21,6 +21,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Skeleton } from '#/components/ui/skeleton'
 import type { ConnectionListItem } from '#/lib/connections.ts'
+import { getExplorerRouteTarget } from '#/lib/explorer-route'
 import { cn } from '#/lib/utils'
 
 type ConnectionsGridProps = {
@@ -188,12 +189,12 @@ function ConnectionTile({
 }: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete'> & {
   connection: ConnectionListItem
 }) {
+  const rootTarget = getExplorerRouteTarget(connection.id, '/')
+
   return (
     <div className="relative min-w-0">
       <Link
-        to="/c/$id"
-        params={{ id: connection.id }}
-        search={{ path: '/' }}
+        {...rootTarget}
         className={cn(
           'flex min-h-[9.5rem] flex-col items-center gap-3 rounded-xl px-3 py-4 text-center transition-colors',
           'text-foreground hover:bg-accent focus-visible:ring-ring outline-none focus-visible:ring-2',
@@ -230,13 +231,7 @@ function ConnectionTile({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[10rem]">
           <DropdownMenuItem asChild>
-            <Link
-              to="/c/$id"
-              params={{ id: connection.id }}
-              search={{ path: '/' }}
-            >
-              Open
-            </Link>
+            <Link {...rootTarget}>Open</Link>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={(event) => {

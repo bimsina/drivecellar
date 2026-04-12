@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '#/components/ui/breadcrumb'
+import { getExplorerRouteTarget } from '#/lib/explorer-route'
 import { cn } from '#/lib/utils'
 
 function pathForFolderParts(parts: string[], endIndex: number) {
@@ -33,6 +34,7 @@ export function ExplorerBreadcrumb({
   const normalized = path === '' ? '/' : path
   const parts = normalized.split('/').filter(Boolean)
   const atRoot = parts.length === 0
+  const connectionTarget = getExplorerRouteTarget(connectionId, '/')
 
   return (
     <Breadcrumb className={cn('min-w-0', className)}>
@@ -51,9 +53,7 @@ export function ExplorerBreadcrumb({
           ) : (
             <BreadcrumbLink asChild>
               <Link
-                to="/c/$id"
-                params={{ id: connectionId }}
-                search={{ path: '/' }}
+                {...connectionTarget}
                 className="max-w-[min(100%,18rem)] truncate"
               >
                 {connectionName}

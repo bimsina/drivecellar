@@ -29,6 +29,11 @@ type FileExplorerProps = {
   connectionName: string
   path: string
   onPathChange: (path: string) => void
+  selectedFilePath?: string
+  onSelectedFilePathChange: (
+    path: string | null,
+    options?: { replace?: boolean },
+  ) => void
 }
 
 type UploadApiResponse = {
@@ -106,6 +111,8 @@ export function FileExplorer({
   connectionName,
   path,
   onPathChange,
+  selectedFilePath,
+  onSelectedFilePathChange,
 }: FileExplorerProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -126,6 +133,15 @@ export function FileExplorer({
         path: normalizedPath,
       },
       { enabled: Boolean(connectionId) },
+    ),
+  )
+  const fileDetailQuery = useQuery(
+    trpc.files.stat.queryOptions(
+      {
+        connectionId,
+        path: selectedFilePath ?? '/',
+      },
+      { enabled: Boolean(connectionId) && Boolean(selectedFilePath) },
     ),
   )
 
@@ -250,12 +266,22 @@ export function FileExplorer({
     }
   }, [connectionId, queryClient, trpc, uploads])
 
+  useEffect(() => {
+    if (fileDetailQuery.data?.isDirectory && selectedFilePath) {
+      onSelectedFilePathChange(null, { replace: true })
+    }
+  }, [
+    fileDetailQuery.data?.isDirectory,
+    onSelectedFilePathChange,
+    selectedFilePath,
+  ])
+
   return (
     <>
       <div className="mx-auto flex w-full min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 flex-col">
           <div
-            className="relative flex min-h-[28rem] min-w-0 flex-1 flex-col overflow-hidden bg-transparent p-0"
+            className="relative flex min-h-112 min-w-0 flex-1 flex-col overflow-hidden bg-transparent p-0"
             onDragEnter={(event) => {
               if (!hasFilePayload(event.dataTransfer)) {
                 return
@@ -333,7 +359,7 @@ export function FileExplorer({
                   </div>
                 </div>
               ) : listQuery.isError ? (
-                <div className="flex h-full min-h-[14rem] items-center justify-center rounded-lg p-6 text-center">
+                <div className="flex h-full min-h-56 items-center justify-center rounded-lg p-6 text-center">
                   <p className="text-destructive text-sm">
                     {listQuery.error?.message ?? 'Could not load files.'}
                   </p>
@@ -346,6 +372,20 @@ export function FileExplorer({
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   onNavigate={onPathChange}
+                  selectedFilePath={selectedFilePath}
+                  selectedFileEntry={
+                    fileDetailQuery.data && !fileDetailQuery.data.isDirectory
+                      ? fileDetailQuery.data
+                      : null
+                  }
+                  selectedFileLoading={fileDetailQuery.isPending}
+                  selectedFileError={
+                    fileDetailQuery.isError
+                      ? (fileDetailQuery.error?.message ??
+                        'Could not load file.')
+                      : null
+                  }
+                  onSelectedFilePathChange={onSelectedFilePathChange}
                 />
               )}
 

@@ -1,14 +1,12 @@
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
   ChevronUp,
-  FileIcon,
+  ChevronDown,
   LoaderCircle,
   X,
 } from 'lucide-react'
 
-import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 
@@ -26,13 +24,13 @@ type UploadQueuePanelProps = {
 function statusIcon(upload: QueuedUpload) {
   switch (upload.status) {
     case 'uploading':
-      return <LoaderCircle className="text-primary size-4 animate-spin" />
+      return <LoaderCircle className="text-primary size-3.5 animate-spin" />
     case 'success':
-      return <CheckCircle2 className="text-chart-4 size-4" />
+      return <CheckCircle2 className="size-3.5 text-emerald-500" />
     case 'error':
-      return <AlertCircle className="text-destructive size-4" />
+      return <AlertCircle className="text-destructive size-3.5" />
     default:
-      return <FileIcon className="text-muted-foreground size-4" />
+      return <div className="bg-muted-foreground/45 size-2 rounded-full" />
   }
 }
 
@@ -73,39 +71,41 @@ export function UploadQueuePanel({
       : `${summary.completed} of ${summary.total} complete`
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-50 w-[min(26rem,calc(100vw-2rem))]">
-      <div className="border-border bg-card pointer-events-auto overflow-hidden rounded-[1.4rem] border shadow-lg backdrop-blur-xl">
+    <div className="pointer-events-none fixed right-4 bottom-4 z-50 w-[min(24rem,calc(100vw-1.5rem))]">
+      <div className="border-border/70 bg-background/92 pointer-events-auto overflow-hidden rounded-2xl border shadow-sm backdrop-blur-xl">
         <button
           type="button"
-          className="w-full px-4 py-4 text-left"
+          className="w-full px-3.5 py-3 text-left"
           onClick={() => onExpandedChange(!expanded)}
         >
-          <div className="flex items-start gap-3">
-            <div className="bg-muted text-foreground mt-0.5 rounded-full p-2">
+          <div className="flex items-center gap-3">
+            <div className="shrink-0">
               {summary.failed > 0 ? (
-                <AlertCircle className="size-4" />
+                <AlertCircle className="text-destructive size-4" />
               ) : summary.isFinished ? (
-                <CheckCircle2 className="size-4" />
+                <CheckCircle2 className="size-4 text-emerald-500" />
               ) : (
-                <LoaderCircle className="size-4 animate-spin" />
+                <LoaderCircle className="text-primary size-4 animate-spin" />
               )}
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-foreground truncate text-sm font-semibold">
+                  <p className="text-foreground truncate text-sm font-medium">
                     {heading}
                   </p>
-                  <p className="text-muted-foreground text-xs">{subheading}</p>
+                  <p className="text-muted-foreground text-[11px]">
+                    {subheading}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1">
                   {summary.isFinished ? (
                     <Button
                       type="button"
                       size="icon-xs"
                       variant="ghost"
-                      className="text-muted-foreground"
+                      className="text-muted-foreground hover:text-foreground h-7 w-7 rounded-full"
                       onClick={(event) => {
                         event.stopPropagation()
                         onDismissComplete()
@@ -123,7 +123,7 @@ export function UploadQueuePanel({
                 </div>
               </div>
 
-              <div className="bg-muted mt-3 h-2 overflow-hidden rounded-full">
+              <div className="bg-muted mt-2 h-1 overflow-hidden rounded-full">
                 <div
                   className={cn(
                     'h-full rounded-full transition-[width] duration-300',
@@ -137,68 +137,57 @@ export function UploadQueuePanel({
         </button>
 
         {expanded ? (
-          <div className="border-border bg-muted/40 border-t px-3 py-3">
-            <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+          <div className="border-border/60 border-t px-3 pb-2.5">
+            <div className="max-h-64 overflow-y-auto">
               {uploads.map((upload) => (
                 <div
                   key={upload.id}
-                  className="border-border bg-card rounded-2xl border px-3 py-2 shadow-sm"
+                  className="border-border/50 flex items-start gap-2 border-b py-2.5 last:border-b-0"
                 >
-                  <div className="flex items-start gap-2">
-                    <div className="mt-0.5 shrink-0">{statusIcon(upload)}</div>
+                  <div className="mt-0.5 shrink-0">{statusIcon(upload)}</div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-foreground truncate text-sm font-medium">
-                            {getUploadLabel(upload)}
-                          </p>
-                          <p className="text-muted-foreground truncate text-xs">
-                            {upload.status === 'error'
-                              ? (upload.error ?? 'Upload failed.')
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-foreground truncate text-sm">
+                          {getUploadLabel(upload)}
+                        </p>
+                        <p className="text-muted-foreground truncate text-[11px]">
+                          {upload.status === 'error'
+                            ? (upload.error ?? 'Upload failed.')
+                            : upload.renamed
+                              ? `${upload.resolvedPath ?? upload.targetPath} renamed`
                               : (upload.resolvedPath ?? upload.targetPath)}
-                          </p>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-2">
-                          {upload.renamed ? (
-                            <Badge
-                              variant="outline"
-                              className="border-border bg-muted text-foreground"
-                            >
-                              Renamed
-                            </Badge>
-                          ) : null}
-                          {upload.status === 'success' ||
-                          upload.status === 'error' ? (
-                            <Button
-                              type="button"
-                              size="icon-xs"
-                              variant="ghost"
-                              className="text-muted-foreground"
-                              onClick={() => onRemoveUpload(upload.id)}
-                              aria-label={`Remove ${getUploadLabel(upload)} from queue`}
-                            >
-                              <X className="size-3.5" />
-                            </Button>
-                          ) : null}
-                        </div>
+                        </p>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-3">
-                        <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-[width] duration-200',
-                              progressBarClass(upload),
-                            )}
-                            style={{ width: `${upload.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-muted-foreground w-10 text-right text-[11px] font-medium tabular-nums">
-                          {Math.round(upload.progress)}%
-                        </span>
+                      {upload.status === 'success' || upload.status === 'error' ? (
+                        <Button
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 rounded-full"
+                          onClick={() => onRemoveUpload(upload.id)}
+                          aria-label={`Remove ${getUploadLabel(upload)} from queue`}
+                        >
+                          <X className="size-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2.5">
+                      <div className="bg-muted h-1 flex-1 overflow-hidden rounded-full">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-[width] duration-200',
+                            progressBarClass(upload),
+                          )}
+                          style={{ width: `${upload.progress}%` }}
+                        />
                       </div>
+                      <span className="text-muted-foreground w-9 text-right text-[11px] tabular-nums">
+                        {Math.round(upload.progress)}%
+                      </span>
                     </div>
                   </div>
                 </div>

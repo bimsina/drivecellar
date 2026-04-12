@@ -27,7 +27,6 @@ import {
 type FileExplorerProps = {
   connectionId: string
   connectionName: string
-  connectionLocation: string
   path: string
   onPathChange: (path: string) => void
 }
@@ -105,7 +104,6 @@ function uploadWithProgress(
 export function FileExplorer({
   connectionId,
   connectionName,
-  connectionLocation,
   path,
   onPathChange,
 }: FileExplorerProps) {
@@ -114,7 +112,7 @@ export function FileExplorer({
   const [viewMode, setViewMode] = useState<FileListViewMode>('grid')
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const [uploads, dispatchUpload] = useReducer(uploadQueueReducer, [])
-  const [queueExpanded, setQueueExpanded] = useState(true)
+  const [queueExpanded, setQueueExpanded] = useState(false)
   const [isDragActive, setIsDragActive] = useState(false)
   const dragDepthRef = useRef(0)
   const inflightUploadIdsRef = useRef(new Set<string>())
@@ -181,7 +179,6 @@ export function FileExplorer({
       type: 'enqueue',
       uploads: createQueuedUploads(batch.files, targetPath),
     })
-    setQueueExpanded(true)
   }
 
   function handleSelectedFiles(files: File[]) {

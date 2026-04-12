@@ -54,11 +54,6 @@ function RouteComponent() {
           <FileExplorer
             connectionId={connectionQuery.data.id}
             connectionName={connectionQuery.data.name}
-            connectionLocation={
-              connectionQuery.data.config.type === 's3'
-                ? `${connectionQuery.data.config.bucket} • ${connectionQuery.data.config.endpoint}`
-                : connectionQuery.data.config.basePath
-            }
             path={path}
             onPathChange={handlePathChange}
           />

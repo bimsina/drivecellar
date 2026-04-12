@@ -22,6 +22,60 @@ function normalizeStorePrefix(prefix: string | undefined): string {
   return prefix.trim().replace(/^\//, '').replace(/\/$/, '')
 }
 
+function shouldForcePathStyle(config: S3Config): boolean {
+  if (config.pathStyle) {
+    return true
+  }
+
+  try {
+    const { hostname } = new URL(config.endpoint)
+
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.endsWith('.localhost') ||
+      hostname.includes('minio')
+    )
+  } catch {
+    return config.pathStyle
+  }
+}
+
+function hasTransformToWebStream(
+  value: unknown,
+): value is { transformToWebStream: () => ReadableStream<Uint8Array> } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'transformToWebStream') === 'function'
+  )
+}
+
+function hasWebStreamBody(
+  value: unknown,
+): value is { stream: () => ReadableStream<Uint8Array> } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'stream') === 'function'
+  )
+}
+
+function isNodeReadable(value: unknown): value is Readable {
+  return typeof value === 'object' && value !== null && value instanceof Readable
+}
+
+function isAsyncIterableBody(
+  value: unknown,
+): value is AsyncIterable<Uint8Array> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, Symbol.asyncIterator) === 'function'
+  )
+}
+
 function objectKey(storePrefix: string, absolutePath: string): string {
   const rel = absolutePath === '/' ? '' : absolutePath.replace(/^\//, '')
   if (!storePrefix) return rel
@@ -50,7 +104,7 @@ export function createS3Provider(config: S3Config): StorageProvider {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
     },
-    forcePathStyle: config.pathStyle,
+    forcePathStyle: shouldForcePathStyle(config),
   })
 
   const bucket = config.bucket
@@ -374,26 +428,21 @@ export function createS3Provider(config: S3Config): StorageProvider {
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: key }),
       )
-      const body = response.Body
+      const body: unknown = response.Body
       if (!body) {
         throw new Error('Empty response body.')
       }
-      const maybeWeb = body as {
-        transformToWebStream?: () => ReadableStream<Uint8Array>
+      if (hasTransformToWebStream(body)) {
+        return body.transformToWebStream()
       }
-      if (typeof maybeWeb.transformToWebStream === 'function') {
-        return maybeWeb.transformToWebStream()
+      if (hasWebStreamBody(body)) {
+        return body.stream()
       }
-      if (body instanceof Readable) {
+      if (isNodeReadable(body)) {
         return Readable.toWeb(body) as ReadableStream<Uint8Array>
       }
-      if (
-        typeof (body as AsyncIterable<Uint8Array>)[Symbol.asyncIterator] ===
-        'function'
-      ) {
-        return Readable.toWeb(
-          Readable.from(body as AsyncIterable<Uint8Array>),
-        ) as ReadableStream<Uint8Array>
+      if (isAsyncIterableBody(body)) {
+        return Readable.toWeb(Readable.from(body)) as ReadableStream<Uint8Array>
       }
       throw new Error('Unsupported S3 body type.')
     },

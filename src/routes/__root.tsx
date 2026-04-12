@@ -57,7 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         {children}
-        <Toaster closeButton position="top-center" richColors />
+        <Toaster closeButton position="bottom-right" />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

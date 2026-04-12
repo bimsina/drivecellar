@@ -106,18 +106,6 @@ function fileTypeShortLabel(entry: FileEntry) {
   return ext ?? 'File'
 }
 
-function fileTypeBadgeClass(entry: FileEntry) {
-  if (entry.isDirectory) return 'bg-secondary text-secondary-foreground'
-  const mime = entry.mimeType ?? ''
-  if (mime.includes('pdf'))
-    return 'bg-destructive/90 text-destructive-foreground'
-  if (mime.startsWith('image/')) return 'bg-chart-4/25 text-chart-4'
-  if (mime.includes('zip') || entry.name.endsWith('.zip'))
-    return 'bg-chart-5/25 text-chart-5'
-  if (mime.includes('video')) return 'bg-chart-3/25 text-chart-3'
-  return 'bg-muted text-muted-foreground'
-}
-
 function sortEntries(
   items: FileEntry[],
   field: ToolbarSortField,
@@ -158,7 +146,7 @@ function FolderCard({
       <button
         type="button"
         onClick={onOpen}
-        className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
+        className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
       >
         <FolderIcon
           className="text-muted-foreground size-5 shrink-0"
@@ -235,23 +223,14 @@ function FileCard({
   const src = buildDownloadUrl(connectionId, entry.path)
   const showImage = isImageEntry(entry)
   const shortLabel = fileTypeShortLabel(entry)
-  const badgeClass = fileTypeBadgeClass(entry)
 
   return (
     <div className="border-border/50 bg-card/90 hover:border-border/65 hover:bg-muted flex min-h-[10rem] flex-col overflow-hidden rounded-lg border shadow-[0_1px_2px_rgba(60,64,67,0.05)] transition-colors dark:shadow-none">
       <div className="border-border/35 flex items-start gap-2 border-b px-2 py-1.5">
-        <span
-          className={cn(
-            'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-wide uppercase',
-            badgeClass,
-          )}
-        >
-          {shortLabel}
-        </span>
         <button
           type="button"
           onClick={onOpen}
-          className="text-foreground focus-visible:ring-ring min-w-0 flex-1 truncate pt-0.5 text-left text-xs font-medium outline-none focus-visible:ring-2"
+          className="text-foreground focus-visible:ring-ring min-w-0 flex-1 cursor-pointer truncate text-left text-xs font-medium outline-none focus-visible:ring-2"
         >
           {entry.name}
         </button>
@@ -307,7 +286,7 @@ function FileCard({
       <button
         type="button"
         onClick={onOpen}
-        className="bg-muted/50 focus-visible:ring-ring flex min-h-[6.5rem] flex-1 items-center justify-center p-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="bg-muted/50 focus-visible:ring-ring flex min-h-[6.5rem] flex-1 cursor-pointer items-center justify-center p-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {showImage ? (
           <img

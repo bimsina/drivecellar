@@ -96,13 +96,22 @@ export function OrganizationOnboardingCard({
   })
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="border-border bg-card w-full max-w-xl rounded-[2rem] border p-2 shadow-sm">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Building2 className="text-muted-foreground size-5" aria-hidden />
-          <CardTitle>Create or join an organization</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary rounded-[1rem] p-2">
+            <Building2 className="size-5" aria-hidden />
+          </div>
+          <div>
+            <p className="text-muted-foreground text-[0.73rem] font-bold tracking-[0.16em] uppercase">
+              Workspace Setup
+            </p>
+            <CardTitle className="text-foreground mt-1 text-3xl leading-none">
+              Create or join an organization
+            </CardTitle>
+          </div>
         </div>
-        <CardDescription>
+        <CardDescription className="text-muted-foreground pt-2 text-sm leading-6">
           You need at least one organization before you can use the workspace.
         </CardDescription>
       </CardHeader>
@@ -221,7 +230,7 @@ export function OrganizationOnboardingCard({
           </form.Subscribe>
         </form>
 
-        <div className="text-muted-foreground flex items-start gap-2 text-sm">
+        <div className="border-border bg-muted/40 text-muted-foreground flex items-start gap-2 rounded-[1.25rem] border p-4 text-sm">
           <Users className="mt-0.5 size-4 shrink-0" aria-hidden />
           <p>
             If someone invited you to an existing organization, accept the

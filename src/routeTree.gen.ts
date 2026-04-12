@@ -15,6 +15,8 @@ import { Route as CIdRouteImport } from './routes/c/$id'
 import { Route as AuthAuthViewRouteImport } from './routes/auth/$authView'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
+import { Route as ApiFilesUploadRouteImport } from './routes/api/files/upload'
+import { Route as ApiFilesDownloadRouteImport } from './routes/api/files/download'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -48,6 +50,16 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFilesUploadRoute = ApiFilesUploadRouteImport.update({
+  id: '/api/files/upload',
+  path: '/api/files/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFilesDownloadRoute = ApiFilesDownloadRouteImport.update({
+  id: '/api/files/download',
+  path: '/api/files/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/download': typeof ApiFilesDownloadRoute
+  '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesByTo {
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/download': typeof ApiFilesDownloadRoute
+  '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesById {
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/download': typeof ApiFilesDownloadRoute
+  '/api/files/upload': typeof ApiFilesUploadRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRouteTypes {
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
+    | '/api/files/download'
+    | '/api/files/upload'
     | '/api/trpc/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
+    | '/api/files/download'
+    | '/api/files/upload'
     | '/api/trpc/$'
   id:
     | '__root__'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
+    | '/api/files/download'
+    | '/api/files/upload'
     | '/api/trpc/$'
   fileRoutesById: FileRoutesById
 }
@@ -119,6 +143,8 @@ export interface RootRouteChildren {
   CIdRoute: typeof CIdRoute
   OrganizationOrganizationViewRoute: typeof OrganizationOrganizationViewRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiFilesDownloadRoute: typeof ApiFilesDownloadRoute
+  ApiFilesUploadRoute: typeof ApiFilesUploadRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
@@ -166,6 +192,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/files/upload': {
+      id: '/api/files/upload'
+      path: '/api/files/upload'
+      fullPath: '/api/files/upload'
+      preLoaderRoute: typeof ApiFilesUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/files/download': {
+      id: '/api/files/download'
+      path: '/api/files/download'
+      fullPath: '/api/files/download'
+      preLoaderRoute: typeof ApiFilesDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -183,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   CIdRoute: CIdRoute,
   OrganizationOrganizationViewRoute: OrganizationOrganizationViewRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiFilesDownloadRoute: ApiFilesDownloadRoute,
+  ApiFilesUploadRoute: ApiFilesUploadRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport

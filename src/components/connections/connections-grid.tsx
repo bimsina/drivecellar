@@ -1,11 +1,15 @@
 import {
-  FolderOpen,
+  Folder,
   HardDrive,
-  MoreHorizontal,
+  MoreVertical,
   PencilLine,
+  Plus,
   Trash2,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 
+import { SortToolbar, type ToolbarSortField } from '#/components/sort-toolbar'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Button } from '#/components/ui/button'
 import {
@@ -17,42 +21,58 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Skeleton } from '#/components/ui/skeleton'
 import type { ConnectionListItem } from '#/lib/connections.ts'
-import { Link } from '@tanstack/react-router'
+import { cn } from '#/lib/utils'
 
 type ConnectionsGridProps = {
   connections: ConnectionListItem[]
   isLoading: boolean
   isRefreshing?: boolean
   errorMessage?: string | null
+  onCreate: () => void
   onEdit: (connection: ConnectionListItem) => void
   onDelete: (connection: ConnectionListItem) => void
 }
 
+function sortConnections(
+  items: ConnectionListItem[],
+  field: ToolbarSortField,
+  ascending: boolean,
+): ConnectionListItem[] {
+  const copy = [...items]
+  copy.sort((a, b) => {
+    let cmp = 0
+    if (field === 'name') {
+      cmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    } else if (field === 'modified') {
+      cmp = a.updatedAt.getTime() - b.updatedAt.getTime()
+    } else {
+      cmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    }
+    return ascending ? cmp : -cmp
+  })
+  return copy
+}
+
 function LoadingState() {
   return (
-    <div className="space-y-6">
-      <div className="flex min-h-4 items-center">
-        <Skeleton className="h-4 w-16 rounded-full" />
+    <div className="flex w-full flex-col gap-6">
+      <div className="border-border flex items-center justify-end gap-2 border-b pb-2">
+        <Skeleton className="h-9 w-9 rounded-md" />
+        <Skeleton className="h-9 w-28 rounded-md" />
+        <Skeleton className="h-9 w-9 rounded-md" />
       </div>
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <Skeleton className="h-4 w-24 rounded" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
-            className="relative flex flex-col items-center rounded-[1.45rem] px-3 py-4 text-center"
+            className="flex flex-col items-center gap-3 px-2 py-4"
           >
-            <Skeleton className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full" />
-            <div className="relative mb-3 flex h-20 w-24 items-center justify-center">
-              <Skeleton className="absolute inset-x-2 top-4 h-12 rounded-[1.2rem]" />
-              <Skeleton className="absolute inset-x-4 top-2 h-6 rounded-[0.8rem]" />
-              <Skeleton className="relative z-10 h-10 w-10 rounded-xl" />
-            </div>
-            <Skeleton className="h-4 w-20 rounded-full" />
+            <Skeleton className="size-[5.5rem] rounded-2xl" />
+            <Skeleton className="h-4 w-full max-w-[8rem] rounded" />
           </div>
         ))}
       </div>
-
-      <Skeleton className="fixed right-6 bottom-6 z-20 h-14 w-14 rounded-full shadow-lg sm:right-8 sm:bottom-8" />
     </div>
   )
 }
@@ -62,92 +82,184 @@ export function ConnectionsGrid({
   isLoading,
   isRefreshing = false,
   errorMessage,
+  onCreate,
   onEdit,
   onDelete,
 }: ConnectionsGridProps) {
+  const [sortField, setSortField] = useState<ToolbarSortField>('name')
+  const [sortAscending, setSortAscending] = useState(true)
+
+  const sorted = useMemo(
+    () => sortConnections(connections, sortField, sortAscending),
+    [connections, sortAscending, sortField],
+  )
+
   if (isLoading) {
     return <LoadingState />
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-2">
       {errorMessage ? (
         <Alert variant="destructive">
-          <AlertTitle>Connections could not be loaded</AlertTitle>
+          <AlertTitle>Could not load storage</AlertTitle>
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       ) : null}
 
       {connections.length === 0 ? (
-        <div className="border-border/80 bg-paper rounded-[2rem] border border-dashed px-6 py-16 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="bg-muted/70 flex size-14 items-center justify-center rounded-full">
-              <FolderOpen className="text-muted-foreground/70" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">No connections yet</h2>
-              <p className="text-muted-foreground max-w-md text-sm">
-                Start with a local path or an S3-compatible bucket so this
-                workspace has somewhere to browse from.
-              </p>
-            </div>
+        <div className="flex min-h-[min(60vh,24rem)] flex-col items-center justify-center px-4 py-16 text-center">
+          <div className="text-muted-foreground">
+            <Folder className="mx-auto size-12" strokeWidth={1.25} />
           </div>
+          <h2 className="text-foreground mt-6 text-base font-medium">
+            No storage connections yet
+          </h2>
+          <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
+            Add a location to browse files.
+          </p>
+          <Button
+            type="button"
+            className="mt-6 h-9 rounded-md px-4 font-medium"
+            onClick={onCreate}
+          >
+            <Plus className="mr-2 size-4" />
+            New
+          </Button>
         </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex min-h-4 items-center">
-            {isRefreshing ? (
-              <Skeleton className="h-4 w-16 rounded-full" />
-            ) : null}
+        <div className="flex w-full flex-col gap-6">
+          <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b pt-1 pb-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-border text-foreground hover:bg-accent h-9 rounded-md bg-transparent px-3 font-normal"
+              onClick={onCreate}
+            >
+              <Plus className="text-primary mr-2 size-4" />
+              New
+            </Button>
+            <SortToolbar
+              className="flex-1 border-0 pb-0"
+              sortField={sortField}
+              onSortFieldChange={setSortField}
+              sortAscending={sortAscending}
+              onToggleSortDirection={() => setSortAscending((v) => !v)}
+              allowedSortFields={['name', 'modified']}
+              menuItems={
+                <DropdownMenuItem onClick={onCreate}>
+                  <Plus className="size-4" />
+                  New storage
+                </DropdownMenuItem>
+              }
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-            {connections.map((connection) => (
-              <Link
-                to="/c/$id"
-                params={{ id: connection.id }}
-                key={connection.id}
-                className="group hover:bg-background/55 relative flex flex-col items-center gap-3 rounded-[1.45rem] px-3 py-4 text-center transition-colors duration-150"
-              >
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="absolute top-1.5 right-1.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <MoreHorizontal />
-                      <span className="sr-only">
-                        Open actions for {connection.name}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuItem onClick={() => onEdit(connection)}>
-                      <PencilLine />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => onDelete(connection)}
-                    >
-                      <Trash2 />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-foreground text-sm font-medium">Storage</h2>
+              {isRefreshing ? (
+                <span className="text-muted-foreground text-xs">Updating…</span>
+              ) : null}
+            </div>
 
-                <HardDrive className="text-foreground/72 relative z-10 size-10" />
-
-                <div className="text-foreground max-w-full text-sm leading-5 font-medium">
-                  {connection.name}
-                </div>
-              </Link>
-            ))}
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {sorted.map((connection) => (
+                <li key={connection.id} className="min-w-0">
+                  <ConnectionTile
+                    connection={connection}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function ConnectionTile({
+  connection,
+  onEdit,
+  onDelete,
+}: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete'> & {
+  connection: ConnectionListItem
+}) {
+  return (
+    <div className="relative min-w-0">
+      <Link
+        to="/c/$id"
+        params={{ id: connection.id }}
+        search={{ path: '/' }}
+        className={cn(
+          'flex min-h-[9.5rem] flex-col items-center gap-3 rounded-xl px-3 py-4 text-center transition-colors',
+          'text-foreground hover:bg-accent focus-visible:ring-ring outline-none focus-visible:ring-2',
+        )}
+      >
+        <span className="bg-muted/60 text-primary dark:bg-muted/40 flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl">
+          <HardDrive className="size-14" strokeWidth={1.25} aria-hidden />
+        </span>
+        <span className="w-full min-w-0 px-0.5">
+          <span className="line-clamp-2 text-sm leading-snug font-medium">
+            {connection.name}
+          </span>
+          {connection.description ? (
+            <span className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
+              {connection.description}
+            </span>
+          ) : null}
+        </span>
+      </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-accent absolute top-1 right-1 size-8"
+            onClick={(event) => {
+              event.preventDefault()
+            }}
+          >
+            <MoreVertical className="size-[1.125rem]" />
+            <span className="sr-only">More actions for {connection.name}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[10rem]">
+          <DropdownMenuItem asChild>
+            <Link
+              to="/c/$id"
+              params={{ id: connection.id }}
+              search={{ path: '/' }}
+            >
+              Open
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit(connection)
+            }}
+          >
+            <PencilLine className="size-4" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete(connection)
+            }}
+          >
+            <Trash2 className="size-4" />
+            Remove
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

@@ -20,11 +20,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1029.0",
     "@daveyplate/better-auth-ui": "^3.4.0",
     "@fontsource-variable/geist": "^5.2.8",
-    "@fontsource-variable/inter": "^5.2.8",
-    "@fontsource-variable/manrope": "^5.2.8",
-    "@fontsource/newsreader": "^5.2.10",
     "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
@@ -46,6 +44,7 @@
     "drizzle-kit": "^0.31.9",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^1.8.0",
+    "mime": "^4.1.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

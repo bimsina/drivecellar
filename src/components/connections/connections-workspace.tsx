@@ -1,7 +1,5 @@
-import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
-import { Button } from '#/components/ui/button'
 import type {
   CreateConnectionInput,
   ConnectionListItem,
@@ -40,25 +38,17 @@ export function ConnectionsWorkspace({
 
   return (
     <>
-      <ConnectionsGrid
-        connections={connections}
-        errorMessage={errorMessage}
-        isLoading={isLoading}
-        isRefreshing={isRefreshing}
-        onDelete={setDeletingConnection}
-        onEdit={setEditingConnection}
-      />
-
-      {!isLoading ? (
-        <Button
-          size="icon"
-          className="fixed right-6 bottom-6 z-20 size-14 rounded-full shadow-lg sm:right-8 sm:bottom-8"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="size-5" />
-          <span className="sr-only">Create connection</span>
-        </Button>
-      ) : null}
+      <main className="mx-auto flex w-full min-w-0 flex-1 flex-col gap-4">
+        <ConnectionsGrid
+          connections={connections}
+          errorMessage={errorMessage}
+          isLoading={isLoading}
+          isRefreshing={isRefreshing}
+          onCreate={() => setCreateOpen(true)}
+          onDelete={setDeletingConnection}
+          onEdit={setEditingConnection}
+        />
+      </main>
 
       {createOpen ? (
         <ConnectionFormDialog

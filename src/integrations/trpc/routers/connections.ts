@@ -8,6 +8,7 @@ import {
   listConnectionsForOrganization,
   updateConnectionRow,
 } from '#/lib/connection-repository.ts'
+import { clearCachedProvider } from '#/lib/storage/index.ts'
 import type { ConnectionRow } from '#/lib/connection-repository.ts'
 import {
   connectionListItemSchema,
@@ -173,6 +174,8 @@ export const connectionsRouter = createTRPCRouter({
         })
       }
 
+      clearCachedProvider(input.id)
+
       return toClientConnection(updatedConnection)
     }),
 
@@ -188,6 +191,8 @@ export const connectionsRouter = createTRPCRouter({
           message: 'Connection not found.',
         })
       }
+
+      clearCachedProvider(input.id)
 
       return { id: input.id }
     }),

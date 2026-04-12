@@ -296,7 +296,7 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
 }
 
 function getConnectionTypeLabel(type: ConnectionFormValues['config']['type']) {
-  return type === 's3' ? 'S3' : 'Local'
+  return type === 's3' ? 'S3 drive' : 'Local drive'
 }
 
 function getFormSchema(isEditMode: boolean) {
@@ -477,7 +477,7 @@ function ConnectionTypeField({
     >
       {(field) => (
         <div className="space-y-2">
-          <Label htmlFor={field.name}>Connection type</Label>
+          <Label htmlFor={field.name}>Drive type</Label>
           <Select
             value={field.state.value}
             onValueChange={(value: 's3' | 'local') => {
@@ -493,7 +493,7 @@ function ConnectionTypeField({
               className="w-full"
               aria-invalid={field.state.meta.errors.length > 0}
             >
-              <SelectValue placeholder="Choose a connection type" />
+              <SelectValue placeholder="Choose a storage type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="local">Local filesystem</SelectItem>
@@ -669,14 +669,14 @@ export function ConnectionFormDialog({
     }
   }
 
-  const dialogTitle = isEditMode ? 'Edit connection' : 'Create connection'
+  const dialogTitle = isEditMode ? 'Edit storage drive' : 'Add storage drive'
   const dialogDescription = isEditMode
-    ? 'Update the connection metadata and storage credentials for this workspace.'
-    : 'Add a storage endpoint so your team can browse and manage files from one place.'
+    ? 'Update the drive label, storage details, and credentials used by this workspace.'
+    : 'Connect a local path or S3-compatible bucket so it appears as a drive in your storage library.'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="border-border bg-card max-h-[90vh] overflow-y-auto border shadow-sm sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
@@ -708,7 +708,7 @@ export function ConnectionFormDialog({
               <TextField
                 form={form}
                 name="name"
-                label="Connection name"
+                label="Drive name"
                 placeholder="Archive storage"
                 validate={validateConnectionName}
                 autoFocus
@@ -734,12 +734,12 @@ export function ConnectionFormDialog({
                     <div>
                       <p className="font-medium">
                         {config.type === 's3'
-                          ? 'S3 credentials'
+                          ? 'S3 storage details'
                           : 'Local path settings'}
                       </p>
                       <p className="text-muted-foreground text-sm">
                         {config.type === 's3'
-                          ? 'These values are used to connect to your object storage endpoint.'
+                          ? 'These values connect DriveCellar directly to your object storage endpoint.'
                           : 'Point DriveCellar at a directory accessible from the app runtime.'}
                       </p>
                     </div>
@@ -823,10 +823,10 @@ export function ConnectionFormDialog({
                       {isSubmitting
                         ? isEditMode
                           ? 'Saving...'
-                          : 'Creating...'
+                          : 'Adding...'
                         : isEditMode
                           ? 'Save changes'
-                          : 'Create connection'}
+                          : 'Add drive'}
                     </Button>
                   )}
                 </form.Subscribe>

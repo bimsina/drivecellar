@@ -30,16 +30,16 @@ export function DeleteConnectionDialog({
 }: DeleteConnectionDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="border-border bg-card border shadow-sm">
         <AlertDialogHeader>
           <AlertDialogMedia>
             <Trash2 />
           </AlertDialogMedia>
-          <AlertDialogTitle>Delete connection</AlertDialogTitle>
+          <AlertDialogTitle>Remove storage drive</AlertDialogTitle>
           <AlertDialogDescription>
             {connection
-              ? `This will permanently remove ${connection.name} from the active workspace.`
-              : 'This will permanently remove the selected connection.'}
+              ? `This removes ${connection.name} from the workspace. Files stay in the original storage location, but the drive will no longer appear in DriveCellar.`
+              : 'This removes the selected drive from the workspace.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -52,7 +52,7 @@ export function DeleteConnectionDialog({
               void onConfirm()
             }}
           >
-            {isDeleting ? 'Deleting...' : 'Delete connection'}
+            {isDeleting ? 'Removing...' : 'Remove drive'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

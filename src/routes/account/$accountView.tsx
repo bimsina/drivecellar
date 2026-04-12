@@ -11,7 +11,7 @@ function RouteComponent() {
   const { accountView } = Route.useParams()
   return (
     <AppShell>
-      <main className="container mx-auto max-w-3xl p-4 md:p-6">
+      <main className="container mx-auto max-w-6xl p-4 md:p-6">
         <AccountView pathname={accountView} />
       </main>
     </AppShell>

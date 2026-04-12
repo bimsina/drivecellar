@@ -21,3 +21,21 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     },
   })
 })
+
+export const organizationProcedure = protectedProcedure.use(({ ctx, next }) => {
+  const organizationId = ctx.sessionData.session.activeOrganizationId
+
+  if (!organizationId) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Select an active organization to manage connections.',
+    })
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      organizationId,
+    },
+  })
+})

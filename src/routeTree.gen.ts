@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrganizationOrganizationViewRouteImport } from './routes/organization/$organizationView'
+import { Route as CIdRouteImport } from './routes/c/$id'
 import { Route as AuthAuthViewRouteImport } from './routes/auth/$authView'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
@@ -27,6 +28,11 @@ const OrganizationOrganizationViewRoute =
     path: '/organization/$organizationView',
     getParentRoute: () => rootRouteImport,
   } as any)
+const CIdRoute = CIdRouteImport.update({
+  id: '/c/$id',
+  path: '/c/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthAuthViewRoute = AuthAuthViewRouteImport.update({
   id: '/auth/$authView',
   path: '/auth/$authView',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/c/$id': typeof CIdRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/c/$id'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountAccountViewRoute: typeof AccountAccountViewRoute
   AuthAuthViewRoute: typeof AuthAuthViewRoute
+  CIdRoute: typeof CIdRoute
   OrganizationOrganizationViewRoute: typeof OrganizationOrganizationViewRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
@@ -123,6 +136,13 @@ declare module '@tanstack/react-router' {
       path: '/organization/$organizationView'
       fullPath: '/organization/$organizationView'
       preLoaderRoute: typeof OrganizationOrganizationViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$id': {
+      id: '/c/$id'
+      path: '/c/$id'
+      fullPath: '/c/$id'
+      preLoaderRoute: typeof CIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/$authView': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountAccountViewRoute: AccountAccountViewRoute,
   AuthAuthViewRoute: AuthAuthViewRoute,
+  CIdRoute: CIdRoute,
   OrganizationOrganizationViewRoute: OrganizationOrganizationViewRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,

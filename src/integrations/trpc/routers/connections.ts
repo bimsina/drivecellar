@@ -88,7 +88,7 @@ export const connectionsRouter = createTRPCRouter({
       if (input.organizationId !== ctx.organizationId) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Active organization does not match the requested query.',
+          message: 'Active team does not match the requested query.',
         })
       }
 

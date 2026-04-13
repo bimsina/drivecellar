@@ -83,7 +83,7 @@ export function CreateFolderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-border bg-card border shadow-sm sm:max-w-md">
+      <DialogContent className="border-border bg-card border sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create folder</DialogTitle>

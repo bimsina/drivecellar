@@ -116,7 +116,7 @@ export function ConnectionsFeature({
       errorMessage={
         activeOrganizationId
           ? (connectionsQuery.error?.message ?? null)
-          : 'Choose an active organization from the header to load connections.'
+          : 'Choose an active team from the header to load connections.'
       }
       onCreate={handleCreateConnection}
       onDelete={handleDeleteConnection}

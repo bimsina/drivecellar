@@ -28,7 +28,7 @@ export const organizationProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!organizationId) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Select an active organization to manage connections.',
+      message: 'Select an active team to manage connections.',
     })
   }
 

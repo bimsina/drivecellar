@@ -21,15 +21,15 @@ const organizationFormSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, 'Organization name is required.')
-    .max(120, 'Organization name must be 120 characters or fewer.'),
+    .min(1, 'Team name is required.')
+    .max(120, 'Team name must be 120 characters or fewer.'),
   slug: z
     .string()
     .trim()
-    .min(1, 'Organization slug is required.')
+    .min(1, 'Team slug is required.')
     .regex(
       /^[a-z0-9-]+$/,
-      'Organization slug can only contain lowercase letters, numbers, and hyphens.',
+      'Team slug can only contain lowercase letters, numbers, and hyphens.',
     ),
 })
 
@@ -87,16 +87,14 @@ export function OrganizationOnboardingCard({
         form.reset()
       } catch (error) {
         const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to create organization.'
+          error instanceof Error ? error.message : 'Failed to create team.'
         setSubmitError(message)
       }
     },
   })
 
   return (
-    <Card className="border-border bg-card w-full max-w-xl rounded-[2rem] border p-2 shadow-sm">
+    <Card className="border-border bg-card w-full max-w-xl rounded-[2rem] border p-2">
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 text-primary rounded-[1rem] p-2">
@@ -107,12 +105,12 @@ export function OrganizationOnboardingCard({
               Workspace Setup
             </p>
             <CardTitle className="text-foreground mt-1 text-3xl leading-none">
-              Create or join an organization
+              Create or join a team
             </CardTitle>
           </div>
         </div>
         <CardDescription className="text-muted-foreground pt-2 text-sm leading-6">
-          You need at least one organization before you can use the workspace.
+          You need at least one team before you can use the workspace.
         </CardDescription>
       </CardHeader>
 
@@ -136,7 +134,7 @@ export function OrganizationOnboardingCard({
           >
             {(field) => (
               <div className="space-y-1.5">
-                <Label htmlFor={field.name}>Organization name</Label>
+                <Label htmlFor={field.name}>Team name</Label>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -173,7 +171,7 @@ export function OrganizationOnboardingCard({
           >
             {(field) => (
               <div className="space-y-1.5">
-                <Label htmlFor={field.name}>Organization slug</Label>
+                <Label htmlFor={field.name}>Team slug</Label>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -200,7 +198,7 @@ export function OrganizationOnboardingCard({
 
           {submitError ? (
             <Alert variant="destructive">
-              <AlertTitle>Could not create organization</AlertTitle>
+              <AlertTitle>Could not create team</AlertTitle>
               <AlertDescription>{submitError}</AlertDescription>
             </Alert>
           ) : null}
@@ -220,10 +218,10 @@ export function OrganizationOnboardingCard({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    Creating organization…
+                    Creating team...
                   </>
                 ) : (
-                  'Create organization'
+                  'Create team'
                 )}
               </Button>
             )}
@@ -233,9 +231,8 @@ export function OrganizationOnboardingCard({
         <div className="border-border bg-muted/40 text-muted-foreground flex items-start gap-2 rounded-[1.25rem] border p-4 text-sm">
           <Users className="mt-0.5 size-4 shrink-0" aria-hidden />
           <p>
-            If someone invited you to an existing organization, accept the
-            Better Auth invitation from the invite email or your account
-            invitations screen.
+            If someone invited you to an existing team, accept the Better Auth
+            invitation from the invite email or your account invitations screen.
           </p>
         </div>
       </CardContent>

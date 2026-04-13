@@ -21,7 +21,6 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Skeleton } from '#/components/ui/skeleton'
 import type { ConnectionListItem } from '#/lib/connections.ts'
-import { getExplorerRouteTarget } from '#/lib/explorer-route'
 import { cn } from '#/lib/utils'
 
 type ConnectionsGridProps = {
@@ -189,30 +188,32 @@ function ConnectionTile({
 }: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete'> & {
   connection: ConnectionListItem
 }) {
-  const rootTarget = getExplorerRouteTarget(connection.id, '/')
-
   return (
-    <div className="relative min-w-0">
+    <div className="group relative min-w-0">
       <Link
-        {...rootTarget}
+        to="/c/$id"
+        params={{ id: connection.id }}
+        search={{ file: '/' }}
         className={cn(
-          'flex min-h-[9.5rem] flex-col items-center gap-3 rounded-xl px-3 py-4 text-center transition-colors',
-          'text-foreground hover:bg-accent focus-visible:ring-ring outline-none focus-visible:ring-2',
+          'flex min-h-40 flex-col items-center gap-3 rounded-2xl px-4 py-5 text-center transition-colors duration-150',
+          'text-foreground hover:bg-muted/60 focus-visible:ring-ring outline-none focus-visible:ring-2',
         )}
       >
-        <span className="bg-muted/60 text-primary dark:bg-muted/40 flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl">
-          <HardDrive className="size-14" strokeWidth={1.25} aria-hidden />
-        </span>
-        <span className="w-full min-w-0 px-0.5">
-          <span className="line-clamp-2 text-sm leading-snug font-medium">
-            {connection.name}
+        <>
+          <span className="bg-primary/10 text-primary flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl">
+            <HardDrive className="size-12" strokeWidth={1.5} aria-hidden />
           </span>
-          {connection.description ? (
-            <span className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
-              {connection.description}
+          <span className="w-full min-w-0 px-1">
+            <span className="line-clamp-2 text-sm leading-snug font-medium">
+              {connection.name}
             </span>
-          ) : null}
-        </span>
+            {connection.description ? (
+              <span className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
+                {connection.description}
+              </span>
+            ) : null}
+          </span>
+        </>
       </Link>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -220,19 +221,16 @@ function ConnectionTile({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-accent absolute top-1 right-1 size-8"
+            className="text-muted-foreground/60 hover:text-foreground hover:bg-accent absolute top-2 right-2 size-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
             onClick={(event) => {
               event.preventDefault()
             }}
           >
-            <MoreVertical className="size-[1.125rem]" />
+            <MoreVertical className="size-4.5" />
             <span className="sr-only">More actions for {connection.name}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[10rem]">
-          <DropdownMenuItem asChild>
-            <Link {...rootTarget}>Open</Link>
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="min-w-40">
           <DropdownMenuItem
             onClick={(event) => {
               event.stopPropagation()
@@ -240,7 +238,7 @@ function ConnectionTile({
             }}
           >
             <PencilLine className="size-4" />
-            Rename
+            Edit
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

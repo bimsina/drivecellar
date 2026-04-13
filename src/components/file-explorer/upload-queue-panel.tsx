@@ -72,10 +72,10 @@ export function UploadQueuePanel({
 
   return (
     <div className="pointer-events-none fixed right-4 bottom-4 z-50 w-[min(24rem,calc(100vw-1.5rem))]">
-      <div className="border-border/70 bg-background/92 pointer-events-auto overflow-hidden rounded-2xl border shadow-sm backdrop-blur-xl">
+      <div className="border-border/70 bg-background/95 pointer-events-auto overflow-hidden rounded-2xl border backdrop-blur-xl">
         <button
           type="button"
-          className="w-full px-3.5 py-3 text-left"
+          className="hover:bg-muted/50 w-full px-4 py-3 text-left transition-colors"
           onClick={() => onExpandedChange(!expanded)}
         >
           <div className="flex items-center gap-3">
@@ -126,7 +126,7 @@ export function UploadQueuePanel({
               <div className="bg-muted mt-2 h-1 overflow-hidden rounded-full">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-[width] duration-300',
+                    'h-full rounded-full transition-[width] duration-300 ease-out',
                     summary.failed > 0 ? 'bg-destructive/70' : 'bg-primary',
                   )}
                   style={{ width: `${summary.averageProgress}%` }}
@@ -137,12 +137,12 @@ export function UploadQueuePanel({
         </button>
 
         {expanded ? (
-          <div className="border-border/60 border-t px-3 pb-2.5">
-            <div className="max-h-64 overflow-y-auto">
+          <div className="border-border/60 border-t px-4 pb-3">
+            <div className="max-h-64 space-y-1 overflow-y-auto">
               {uploads.map((upload) => (
                 <div
                   key={upload.id}
-                  className="border-border/50 flex items-start gap-2 border-b py-2.5 last:border-b-0"
+                  className="border-border/40 flex items-start gap-3 border-b py-3 last:border-b-0"
                 >
                   <div className="mt-0.5 shrink-0">{statusIcon(upload)}</div>
 
@@ -177,10 +177,10 @@ export function UploadQueuePanel({
                     </div>
 
                     <div className="mt-2 flex items-center gap-2.5">
-                      <div className="bg-muted h-1 flex-1 overflow-hidden rounded-full">
+                      <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
                         <div
                           className={cn(
-                            'h-full rounded-full transition-[width] duration-200',
+                            'h-full rounded-full transition-[width] duration-200 ease-out',
                             progressBarClass(upload),
                           )}
                           style={{ width: `${upload.progress}%` }}

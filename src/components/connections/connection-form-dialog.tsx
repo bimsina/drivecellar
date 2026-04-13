@@ -704,7 +704,7 @@ export function ConnectionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-border bg-card max-h-[90vh] overflow-y-auto border shadow-sm sm:max-w-2xl">
+      <DialogContent className="border-border bg-card max-h-[90vh] overflow-y-auto border sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>

@@ -30,7 +30,7 @@ export function DeleteConnectionDialog({
 }: DeleteConnectionDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="border-border bg-card border shadow-sm">
+      <AlertDialogContent className="border-border bg-card border">
         <AlertDialogHeader>
           <AlertDialogMedia>
             <Trash2 />

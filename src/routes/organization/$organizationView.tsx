@@ -11,7 +11,7 @@ function RouteComponent() {
   return (
     <AppShell>
       <main className="flex flex-1 flex-col p-4 md:p-6">
-        <div className="border-border bg-card mx-auto w-full rounded-[2rem] border p-4 shadow-sm sm:p-6">
+        <div className="mx-auto w-full p-4 sm:p-6">
           <OrganizationView pathname={organizationView} />
         </div>
       </main>

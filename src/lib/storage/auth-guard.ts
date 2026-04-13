@@ -18,7 +18,7 @@ export async function verifyFileAccess(
   const organizationId = sessionData.session.activeOrganizationId
 
   if (!organizationId) {
-    throw new Response('Select an active organization.', { status: 400 })
+    throw new Response('Select an active team.', { status: 400 })
   }
 
   return {

@@ -13,9 +13,7 @@ const HKDF_INFO = Buffer.from('aes-256-gcm', 'utf8')
 
 /** Derives a 32-byte AES key from the server passphrase. */
 export function deriveConnectionEncryptionKey(passphrase: string): Buffer {
-  return Buffer.from(
-    hkdfSync('sha256', passphrase, HKDF_SALT, HKDF_INFO, 32),
-  )
+  return Buffer.from(hkdfSync('sha256', passphrase, HKDF_SALT, HKDF_INFO, 32))
 }
 
 export function isEncryptedCredential(value: string): boolean {
@@ -48,7 +46,8 @@ export function decryptCredentialValue(enc: string, key: Buffer): string {
   const ciphertext = raw.subarray(12, raw.length - 16)
   const decipher = createDecipheriv('aes-256-gcm', key, iv)
   decipher.setAuthTag(tag)
-  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString(
-    'utf8',
-  )
+  return Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]).toString('utf8')
 }

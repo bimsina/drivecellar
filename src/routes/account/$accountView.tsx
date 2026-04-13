@@ -12,7 +12,7 @@ function RouteComponent() {
   return (
     <AppShell>
       <main className="flex flex-1 flex-col p-4 md:p-6">
-        <div className="border-border bg-card mx-auto w-full max-w-6xl rounded-[2rem] border p-4 shadow-sm sm:p-6">
+        <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
           <AccountView pathname={accountView} />
         </div>
       </main>

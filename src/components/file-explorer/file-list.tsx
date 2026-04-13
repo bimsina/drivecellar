@@ -142,16 +142,15 @@ function FolderCard({
   onDelete: () => void
 }) {
   return (
-    <div className="border-border/50 bg-card/90 hover:border-border/70 hover:bg-muted flex items-stretch gap-1 rounded-lg border py-0.5 shadow-[0_1px_2px_rgba(60,64,67,0.04)] transition-colors dark:shadow-none">
+    <div className="group border-border/50 bg-card/90 hover:bg-muted/60 flex items-stretch gap-1 rounded-xl border py-0.5 transition-colors duration-150">
       <button
         type="button"
         onClick={onOpen}
-        className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
+        className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
       >
-        <FolderIcon
-          className="text-muted-foreground size-5 shrink-0"
-          strokeWidth={1.5}
-        />
+        <span className="bg-primary/10 flex shrink-0 items-center justify-center rounded-lg p-1.5">
+          <FolderIcon className="text-primary size-4" strokeWidth={2} />
+        </span>
         <span className="min-w-0 flex-1 truncate">{entry.name}</span>
       </button>
       <DropdownMenu>
@@ -160,7 +159,7 @@ function FolderCard({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-accent/80 size-9 shrink-0"
+            className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-9 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -170,15 +169,7 @@ function FolderCard({
             <span className="sr-only">More actions for {entry.name}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[10rem]">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen()
-            }}
-          >
-            Open
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="min-w-40">
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation()
@@ -225,8 +216,8 @@ function FileCard({
   const shortLabel = fileTypeShortLabel(entry)
 
   return (
-    <div className="border-border/50 bg-card/90 hover:border-border/65 hover:bg-muted flex min-h-[10rem] flex-col overflow-hidden rounded-lg border shadow-[0_1px_2px_rgba(60,64,67,0.05)] transition-colors dark:shadow-none">
-      <div className="border-border/35 flex items-start gap-2 border-b px-2 py-1.5">
+    <div className="group border-border/50 bg-card/90 hover:bg-muted/60 flex min-h-[10rem] flex-col overflow-hidden rounded-xl border transition-colors duration-150">
+      <div className="border-border/30 flex items-center gap-2 border-b px-3 py-2">
         <button
           type="button"
           onClick={onOpen}
@@ -240,7 +231,7 @@ function FileCard({
               type="button"
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:bg-accent/80 size-7 shrink-0"
+              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-7 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -286,7 +277,7 @@ function FileCard({
       <button
         type="button"
         onClick={onOpen}
-        className="bg-muted/50 focus-visible:ring-ring flex min-h-[6.5rem] flex-1 cursor-pointer items-center justify-center p-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="bg-muted/30 hover:bg-muted/50 focus-visible:ring-ring flex min-h-[6.5rem] flex-1 cursor-pointer items-center justify-center p-3 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {showImage ? (
           <img
@@ -297,8 +288,10 @@ function FileCard({
           />
         ) : (
           <div className="text-muted-foreground flex flex-col items-center justify-center gap-2">
-            <FileIcon className="size-10 opacity-50" strokeWidth={1.25} />
-            <span className="text-[11px]">{shortLabel}</span>
+            <div className="bg-primary/10 flex items-center justify-center rounded-lg p-2">
+              <FileIcon className="size-8 opacity-60" strokeWidth={1.5} />
+            </div>
+            <span className="text-[11px] font-medium">{shortLabel}</span>
           </div>
         )}
       </button>
@@ -509,24 +502,12 @@ export function FileList({
       <ContextMenu key={entry.path}>
         <ContextMenuTrigger asChild>{inner}</ContextMenuTrigger>
         <ContextMenuContent className="w-48">
-          {entry.isDirectory ? (
-            <ContextMenuItem onSelect={() => onNavigate(entry.path)}>
-              Open
-            </ContextMenuItem>
-          ) : (
-            <>
-              <ContextMenuItem
-                onSelect={() => onSelectedFilePathChange(entry.path)}
-              >
-                Open
-              </ContextMenuItem>
-              <ContextMenuItem onSelect={() => triggerDownload(entry)}>
-                <Download className="size-4" />
-                Download
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-            </>
-          )}
+          <ContextMenuItem onSelect={() => triggerDownload(entry)}>
+            <Download className="size-4" />
+            Download
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+
           <ContextMenuItem onSelect={() => openRename(entry)}>
             <Pencil className="size-4" />
             Rename
@@ -587,14 +568,16 @@ export function FileList({
 
       {entries.length === 0 ? (
         <div className="flex min-h-[min(50vh,18rem)] flex-col items-center justify-center px-4 py-12 text-center">
-          <FolderIcon
-            className="text-muted-foreground size-10"
-            strokeWidth={1.25}
-          />
-          <p className="text-foreground mt-4 text-sm font-medium">
+          <div className="bg-muted/60 mb-4 flex items-center justify-center rounded-2xl p-4">
+            <FolderIcon
+              className="text-muted-foreground/60 size-10"
+              strokeWidth={1.25}
+            />
+          </div>
+          <p className="text-foreground mt-2 text-base font-medium">
             This folder is empty
           </p>
-          <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
             Drop files here, or use New folder and Upload.
           </p>
         </div>

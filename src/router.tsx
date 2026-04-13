@@ -11,6 +11,7 @@ import TanstackQueryProvider, {
   getContext,
 } from './integrations/tanstack-query/root-provider'
 import { authClient } from './lib/auth-client'
+import { authLocalizationOverrides } from './lib/auth-localization'
 
 export function getRouter() {
   const context = getContext()
@@ -28,6 +29,7 @@ export function getRouter() {
           <AuthUIProviderTanstack
             authClient={authClient}
             organization={true}
+            localization={authLocalizationOverrides}
             navigate={(href) => router.navigate({ href })}
             replace={(href) => router.navigate({ href, replace: true })}
             Link={({ href, ..._props }) => <Link to={href} {..._props} />}

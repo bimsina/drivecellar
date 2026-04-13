@@ -1,6 +1,6 @@
 import { UserButton } from '@daveyplate/better-auth-ui'
 import { Link } from '@tanstack/react-router'
-import { Building2 } from 'lucide-react'
+import { Building2, HardDrive } from 'lucide-react'
 
 import { authClient } from '#/lib/auth-client'
 import { cn } from '#/lib/utils'
@@ -27,17 +27,15 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 px-4 md:px-6 lg:px-8',
-        wide ? 'border-border bg-background border-b pt-3 pb-0' : 'pt-4',
+        'bg-background sticky top-0 z-50 px-4 md:px-6 lg:px-8',
+        wide ? 'pt-3 pb-0' : 'pt-4',
         className,
       )}
     >
       <div
         className={cn(
           'mx-auto flex w-full items-center justify-between gap-3 py-3',
-          wide
-            ? 'max-w-[100%]'
-            : 'border-border bg-card max-w-[1600px] rounded-xl border px-4 shadow-sm sm:px-5',
+          wide ? 'max-w-[100%]' : 'max-w-[1600px] rounded-xl px-4 sm:px-5',
         )}
       >
         <Link
@@ -47,7 +45,12 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
             !wide && 'font-semibold',
           )}
         >
-          DriveCellar
+          <span className="flex items-center gap-2.5">
+            <span className="bg-primary/10 flex items-center justify-center rounded-lg p-1.5">
+              <HardDrive className="text-primary size-5" strokeWidth={2} />
+            </span>
+            DriveCellar
+          </span>
         </Link>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">

@@ -16,7 +16,7 @@ import {
   indexDeleteEntry,
   indexInsertEntry,
   indexRenameEntry,
-  listFromIndex,
+  listFromIndexBatch,
 } from '#/lib/indexing/index.ts'
 import { resolveProvider } from '#/lib/storage/index.ts'
 import { normalizePath, PathError } from '#/lib/storage/path-utils.ts'
@@ -36,10 +36,17 @@ const fileListEntrySchema = fileEntrySchema.extend({
   access: permissionAccessSchema,
 })
 
+const listCursorSchema = z.object({
+  folderOffset: z.number().int().min(0),
+  fileOffset: z.number().int().min(0),
+})
+
 const listResultSchema = z.object({
   path: z.string(),
   currentAccess: permissionAccessSchema,
   entries: z.array(fileListEntrySchema),
+  hasMore: z.boolean(),
+  nextCursor: listCursorSchema.nullable(),
 })
 
 function pathName(path: string) {
@@ -105,11 +112,15 @@ export const filesRouter = createTRPCRouter({
       z.object({
         connectionId: z.string().min(1),
         path: z.string(),
+        cursor: listCursorSchema.nullish(),
+        limit: z.number().int().min(1).max(100).default(100),
       }),
     )
     .output(listResultSchema)
     .query(async ({ ctx, input }) => {
       const path = safeNormalize(input.path)
+      const pageLimit = input.limit
+      const cursor = input.cursor ?? { folderOffset: 0, fileOffset: 0 }
       const permissionContext = await getPermissionContext(
         ctx.sessionData.user.id,
         ctx.organizationId,
@@ -146,31 +157,126 @@ export const filesRouter = createTRPCRouter({
         })
       }
 
-      const entries = await listFromIndex(input.connectionId, path)
+      const canSeeDirectoryByDescendantAccess = (directoryPath: string) =>
+        grantedFolderPaths.some(
+          (grantedPath) =>
+            grantedPath.startsWith(`${directoryPath}/`) ||
+            grantedPath === directoryPath,
+        )
 
-      const entriesWithAccess = entries.map((entry) => ({
-        ...entry,
-        access: resolvePermissionFromContext(entry.path, permissionContext),
-      }))
+      const isVisibleEntry = (entry: {
+        isDirectory: boolean
+        access: (typeof permissionAccessSchema)['_output']
+        path: string
+      }) => {
+        if (canRead(entry.access)) {
+          return true
+        }
+
+        if (!entry.isDirectory) {
+          return false
+        }
+
+        return canSeeDirectoryByDescendantAccess(entry.path)
+      }
+
+      const visibleEntries: Array<z.infer<typeof fileListEntrySchema>> = []
+      let folderOffset = cursor.folderOffset
+      let fileOffset = cursor.fileOffset
+      let foldersExhausted = false
+      let filesExhausted = false
+      const scanBatchSize = Math.max(pageLimit, 100)
+
+      while (
+        visibleEntries.length < pageLimit &&
+        (!foldersExhausted || !filesExhausted)
+      ) {
+        if (!foldersExhausted) {
+          const folderBatch = await listFromIndexBatch({
+            connectionId: input.connectionId,
+            parentPath: path,
+            isDirectory: true,
+            offset: folderOffset,
+            limit: scanBatchSize,
+          })
+          folderOffset += folderBatch.length
+          if (folderBatch.length < scanBatchSize) {
+            foldersExhausted = true
+          }
+
+          for (const entry of folderBatch) {
+            const entryWithAccess = {
+              ...entry,
+              access: resolvePermissionFromContext(
+                entry.path,
+                permissionContext,
+              ),
+            }
+
+            if (!isVisibleEntry(entryWithAccess)) {
+              continue
+            }
+
+            visibleEntries.push(entryWithAccess)
+            if (visibleEntries.length >= pageLimit) {
+              break
+            }
+          }
+
+          if (visibleEntries.length >= pageLimit) {
+            break
+          }
+        }
+
+        if (!filesExhausted) {
+          const remainingSlots = pageLimit - visibleEntries.length
+          const fileBatch = await listFromIndexBatch({
+            connectionId: input.connectionId,
+            parentPath: path,
+            isDirectory: false,
+            offset: fileOffset,
+            limit: Math.max(remainingSlots, scanBatchSize),
+          })
+          fileOffset += fileBatch.length
+          if (fileBatch.length < Math.max(remainingSlots, scanBatchSize)) {
+            filesExhausted = true
+          }
+
+          for (const entry of fileBatch) {
+            const entryWithAccess = {
+              ...entry,
+              access: resolvePermissionFromContext(
+                entry.path,
+                permissionContext,
+              ),
+            }
+
+            if (!isVisibleEntry(entryWithAccess)) {
+              continue
+            }
+
+            visibleEntries.push(entryWithAccess)
+            if (visibleEntries.length >= pageLimit) {
+              break
+            }
+          }
+        }
+      }
+
+      const hasMore = !foldersExhausted || !filesExhausted
+      const nextCursor = hasMore
+        ? {
+            folderOffset,
+            fileOffset,
+          }
+        : null
 
       return {
         path,
         currentAccess,
-        entries: entriesWithAccess.filter((entry) => {
-          if (canRead(entry.access)) {
-            return true
-          }
-
-          if (!entry.isDirectory) {
-            return false
-          }
-
-          return grantedFolderPaths.some(
-            (grantedPath) =>
-              grantedPath.startsWith(`${entry.path}/`) ||
-              grantedPath === entry.path,
-          )
-        }),
+        entries: visibleEntries,
+        hasMore,
+        nextCursor,
       }
     }),
 

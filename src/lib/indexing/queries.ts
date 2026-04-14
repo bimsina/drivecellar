@@ -6,7 +6,25 @@ import { fileIndex, indexRuns, indexStatus } from '#/db/schema/index.ts'
 export type IndexStatusRow = typeof indexStatus.$inferSelect
 export type IndexRunRow = typeof indexRuns.$inferSelect
 
-export async function listFromIndex(connectionId: string, parentPath: string) {
+type ListFromIndexBatchArgs = {
+  connectionId: string
+  parentPath: string
+  isDirectory: boolean
+  offset: number
+  limit: number
+}
+
+export async function listFromIndexBatch({
+  connectionId,
+  parentPath,
+  isDirectory,
+  offset,
+  limit,
+}: ListFromIndexBatchArgs) {
+  if (limit <= 0) {
+    return []
+  }
+
   const rows = await db
     .select({
       name: fileIndex.name,
@@ -21,11 +39,35 @@ export async function listFromIndex(connectionId: string, parentPath: string) {
       and(
         eq(fileIndex.connectionId, connectionId),
         eq(fileIndex.parentPath, parentPath),
+        eq(fileIndex.isDirectory, isDirectory),
       ),
     )
-    .orderBy(desc(fileIndex.isDirectory), asc(fileIndex.name))
+    .orderBy(asc(fileIndex.name))
+    .offset(offset)
+    .limit(limit)
 
   return rows
+}
+
+export async function listFromIndex(connectionId: string, parentPath: string) {
+  const [folders, files] = await Promise.all([
+    listFromIndexBatch({
+      connectionId,
+      parentPath,
+      isDirectory: true,
+      offset: 0,
+      limit: Number.MAX_SAFE_INTEGER,
+    }),
+    listFromIndexBatch({
+      connectionId,
+      parentPath,
+      isDirectory: false,
+      offset: 0,
+      limit: Number.MAX_SAFE_INTEGER,
+    }),
+  ])
+
+  return [...folders, ...files]
 }
 
 export async function hasCompletedIndex(connectionId: string) {

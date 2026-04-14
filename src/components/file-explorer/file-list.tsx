@@ -10,7 +10,19 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react'
-import { useId, useMemo, useState } from 'react'
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  useCallback,
+  type RefObject,
+} from 'react'
+import {
+  AutoSizer,
+  List as VirtualizedList,
+  WindowScroller,
+} from 'react-virtualized'
 import { toast } from 'sonner'
 
 import { SortToolbar, type ToolbarSortField } from '#/components/sort-toolbar'
@@ -50,14 +62,6 @@ import {
 import { FieldError } from '#/components/ui/field-error'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useTRPC } from '#/integrations/trpc/react'
 import type { PermissionAccess } from '#/lib/connections'
@@ -67,6 +71,21 @@ import { cn } from '#/lib/utils'
 
 import { FileDetailDialog } from './file-detail-dialog'
 import { buildDownloadUrl, isImageEntry } from './preview-utils'
+
+const LIST_VIRTUAL_ROW_HEIGHT = 64
+const GRID_FOLDER_CARD_HEIGHT = 64
+const GRID_FILE_CARD_HEIGHT = 160
+const GRID_SECTION_HEADER_HEIGHT = 32
+const GRID_FOLDER_ROW_HEIGHT = GRID_FOLDER_CARD_HEIGHT + 8
+const GRID_FILE_ROW_HEIGHT = GRID_FILE_CARD_HEIGHT + 8
+const GRID_FOLDER_CARD_STYLE: React.CSSProperties = {
+  height: GRID_FOLDER_CARD_HEIGHT,
+  minHeight: GRID_FOLDER_CARD_HEIGHT,
+}
+const GRID_FILE_CARD_STYLE: React.CSSProperties = {
+  height: GRID_FILE_CARD_HEIGHT,
+  minHeight: GRID_FILE_CARD_HEIGHT,
+}
 
 function formatBytes(n: number | null) {
   if (n === null) return '—'
@@ -150,7 +169,10 @@ function FolderCard({
   onDelete: () => void
 }) {
   return (
-    <div className="group border-border/50 bg-card/90 hover:bg-muted/60 flex items-stretch gap-1 rounded-xl border py-0.5 transition-colors duration-150">
+    <div
+      style={GRID_FOLDER_CARD_STYLE}
+      className="group border-border/50 bg-card/90 hover:bg-muted/60 flex items-stretch gap-1 rounded-xl border py-0.5 transition-colors duration-150"
+    >
       <button
         type="button"
         onClick={onOpen}
@@ -248,7 +270,10 @@ function FileCard({
   const shortLabel = fileTypeShortLabel(entry)
 
   return (
-    <div className="group border-border/50 bg-card/90 hover:bg-muted/60 flex min-h-[10rem] flex-col overflow-hidden rounded-xl border transition-colors duration-150">
+    <div
+      style={GRID_FILE_CARD_STYLE}
+      className="group border-border/50 bg-card/90 hover:bg-muted/60 flex flex-col overflow-hidden rounded-xl border transition-colors duration-150"
+    >
       <div className="border-border/30 flex items-center gap-2 border-b px-3 py-2">
         <button
           type="button"
@@ -357,6 +382,10 @@ type FileListProps = {
   canWriteCurrentPath: boolean
   canManagePermissions: boolean
   entries: ExplorerFileEntry[]
+  hasMoreEntries: boolean
+  isLoadingMoreEntries: boolean
+  onLoadMoreEntries: () => void
+  scrollContainerRef: RefObject<HTMLDivElement | null>
   viewMode: FileListViewMode
   onViewModeChange: (mode: FileListViewMode) => void
   onNavigate: (path: string) => void
@@ -381,6 +410,10 @@ export function FileList({
   canWriteCurrentPath,
   canManagePermissions,
   entries,
+  hasMoreEntries,
+  isLoadingMoreEntries,
+  onLoadMoreEntries,
+  scrollContainerRef,
   viewMode,
   onViewModeChange,
   onNavigate,
@@ -554,8 +587,8 @@ export function FileList({
           />
         )
       ) : (
-        <TableRow
-          className="bg-card/90 hover:bg-muted cursor-pointer border-0 transition-colors"
+        <div
+          className="bg-card/90 hover:bg-muted flex h-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 px-3 py-2 transition-colors"
           onClick={() => {
             if (entry.isDirectory) {
               onNavigate(entry.path)
@@ -564,41 +597,39 @@ export function FileList({
             }
           }}
         >
-          <TableCell className="font-medium">
-            <span className="inline-flex min-w-0 items-center gap-3">
-              <span
-                className={cn(
-                  'flex shrink-0 items-center justify-center',
-                  entry.isDirectory
-                    ? 'text-foreground'
-                    : 'text-muted-foreground',
-                )}
-              >
-                {entry.isDirectory ? (
-                  <FolderIcon className="size-4 shrink-0" />
-                ) : (
-                  <FileIcon className="size-4 shrink-0" />
-                )}
+          <span className="inline-flex min-w-0 items-center gap-3">
+            <span
+              className={cn(
+                'flex shrink-0 items-center justify-center',
+                entry.isDirectory ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              {entry.isDirectory ? (
+                <FolderIcon className="size-4 shrink-0" />
+              ) : (
+                <FileIcon className="size-4 shrink-0" />
+              )}
+            </span>
+            <span className="min-w-0">
+              <span className="text-foreground block truncate text-sm font-medium">
+                {entry.name}
               </span>
-              <span className="min-w-0">
-                <span className="text-foreground block truncate">
-                  {entry.name}
-                </span>
-                <span className="text-muted-foreground block text-xs font-normal">
-                  {entry.isDirectory
-                    ? 'Folder'
-                    : (entry.mimeType ?? 'Stored file')}
-                </span>
+              <span className="text-muted-foreground block text-xs font-normal">
+                {entry.isDirectory
+                  ? 'Folder'
+                  : (entry.mimeType ?? 'Stored file')}
               </span>
             </span>
-          </TableCell>
-          <TableCell className="text-muted-foreground hidden md:table-cell">
-            {formatCompactDate(entry.lastModified)}
-          </TableCell>
-          <TableCell className="text-muted-foreground text-right">
-            {entry.isDirectory ? '—' : formatBytes(entry.size)}
-          </TableCell>
-        </TableRow>
+          </span>
+          <div className="ml-2 flex shrink-0 items-center gap-4 text-xs">
+            <span className="text-muted-foreground hidden min-w-28 text-right md:block">
+              {formatCompactDate(entry.lastModified)}
+            </span>
+            <span className="text-muted-foreground min-w-16 text-right">
+              {entry.isDirectory ? '—' : formatBytes(entry.size)}
+            </span>
+          </div>
+        </div>
       )
 
     return (
@@ -648,6 +679,84 @@ export function FileList({
   const listCombined = useMemo(
     () => [...sortedFolders, ...sortedFiles],
     [sortedFiles, sortedFolders],
+  )
+  const [scrollElement, setScrollElement] = useState<
+    Element | (Window & typeof globalThis) | null
+  >(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    setScrollElement(scrollContainerRef.current ?? window)
+  }, [scrollContainerRef])
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) {
+      return
+    }
+
+    scrollContainer.scrollTop = 0
+  }, [scrollContainerRef, viewMode])
+
+  const resolveGridColumns = useCallback((width: number) => {
+    if (width >= 1536) return 6
+    if (width >= 1280) return 5
+    if (width >= 1024) return 4
+    if (width >= 768) return 3
+    if (width >= 640) return 2
+    return 1
+  }, [])
+
+  const maybeLoadMore = useCallback(
+    (lastVisibleIndex: number) => {
+      if (!hasMoreEntries || isLoadingMoreEntries) {
+        return
+      }
+
+      if (lastVisibleIndex >= listCombined.length - 12) {
+        onLoadMoreEntries()
+      }
+    },
+    [
+      hasMoreEntries,
+      isLoadingMoreEntries,
+      listCombined.length,
+      onLoadMoreEntries,
+    ],
+  )
+
+  const handleListRowsRendered = useCallback(
+    ({ stopIndex }: { startIndex: number; stopIndex: number }) => {
+      maybeLoadMore(stopIndex)
+    },
+    [maybeLoadMore],
+  )
+
+  const listRowRenderer = useCallback(
+    ({
+      index,
+      key,
+      style,
+    }: {
+      index: number
+      key: string
+      style: React.CSSProperties
+    }) => {
+      const entry = listCombined[index]
+      if (!entry) {
+        return null
+      }
+
+      return (
+        <div key={key} style={style} className="h-16 px-1 py-1">
+          {rowForEntry(entry)}
+        </div>
+      )
+    },
+    [listCombined],
   )
 
   return (
@@ -704,47 +813,222 @@ export function FileList({
               : 'No files are available here.'}
           </p>
         </div>
-      ) : viewMode === 'grid' ? (
-        <div className="space-y-8">
-          {sortedFolders.length > 0 ? (
-            <section>
-              <h3 className="text-foreground mb-3 text-sm font-medium">
-                Folders
-              </h3>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                {sortedFolders.map((e) => rowForEntry(e))}
-              </div>
-            </section>
-          ) : null}
-          {sortedFiles.length > 0 ? (
-            <section>
-              <h3 className="text-foreground mb-3 text-sm font-medium">
-                Files
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                {sortedFiles.map((e) => rowForEntry(e))}
-              </div>
-            </section>
-          ) : null}
-        </div>
       ) : (
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-0 bg-transparent hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Name</TableHead>
-                <TableHead className="text-muted-foreground hidden md:table-cell">
+        <div className={cn('relative min-h-80', viewMode === 'list' && 'pt-2')}>
+          {viewMode === 'list' ? (
+            <div className="text-muted-foreground mb-2 grid grid-cols-[1fr_auto] items-center px-3 text-xs">
+              <span>Name</span>
+              <div className="flex items-center gap-4">
+                <span className="hidden min-w-28 text-right md:block">
                   Date modified
-                </TableHead>
-                <TableHead className="text-muted-foreground text-right">
-                  File size
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-border/60 divide-y">
-              {listCombined.map((e) => rowForEntry(e))}
-            </TableBody>
-          </Table>
+                </span>
+                <span className="min-w-16 text-right">File size</span>
+              </div>
+            </div>
+          ) : null}
+          {scrollElement ? (
+            <WindowScroller scrollElement={scrollElement}>
+              {({
+                height,
+                isScrolling,
+                onChildScroll,
+                registerChild,
+                scrollTop,
+              }) => (
+                <div ref={registerChild}>
+                  <AutoSizer disableHeight>
+                    {({ width }) => {
+                      const columns = resolveGridColumns(width)
+
+                      if (viewMode === 'grid') {
+                        const folderRows: ExplorerFileEntry[][] = []
+                        for (
+                          let i = 0;
+                          i < sortedFolders.length;
+                          i += columns
+                        ) {
+                          folderRows.push(sortedFolders.slice(i, i + columns))
+                        }
+
+                        const fileRows: ExplorerFileEntry[][] = []
+                        for (let i = 0; i < sortedFiles.length; i += columns) {
+                          fileRows.push(sortedFiles.slice(i, i + columns))
+                        }
+
+                        type GridVirtualRow =
+                          | { kind: 'header'; title: string }
+                          | {
+                              kind: 'entries'
+                              section: 'folders' | 'files'
+                              entries: ExplorerFileEntry[]
+                              endIndex: number
+                            }
+
+                        const gridRows: GridVirtualRow[] = []
+
+                        if (folderRows.length > 0) {
+                          gridRows.push({ kind: 'header', title: 'Folders' })
+                          for (
+                            let rowIndex = 0;
+                            rowIndex < folderRows.length;
+                            rowIndex += 1
+                          ) {
+                            const rowEntries = folderRows[rowIndex] ?? []
+                            const endIndex = Math.min(
+                              sortedFolders.length - 1,
+                              (rowIndex + 1) * columns - 1,
+                            )
+                            gridRows.push({
+                              kind: 'entries',
+                              section: 'folders',
+                              entries: rowEntries,
+                              endIndex,
+                            })
+                          }
+                        }
+
+                        if (fileRows.length > 0) {
+                          gridRows.push({ kind: 'header', title: 'Files' })
+                          for (
+                            let rowIndex = 0;
+                            rowIndex < fileRows.length;
+                            rowIndex += 1
+                          ) {
+                            const rowEntries = fileRows[rowIndex] ?? []
+                            const endIndex =
+                              sortedFolders.length +
+                              Math.min(
+                                sortedFiles.length - 1,
+                                (rowIndex + 1) * columns - 1,
+                              )
+                            gridRows.push({
+                              kind: 'entries',
+                              section: 'files',
+                              entries: rowEntries,
+                              endIndex,
+                            })
+                          }
+                        }
+
+                        const handleGridRowsRendered = ({
+                          stopIndex,
+                        }: {
+                          startIndex: number
+                          stopIndex: number
+                        }) => {
+                          const lastRow = gridRows[stopIndex]
+                          if (!lastRow || lastRow.kind !== 'entries') {
+                            return
+                          }
+
+                          maybeLoadMore(lastRow.endIndex)
+                        }
+
+                        const gridRowRenderer = ({
+                          index,
+                          key,
+                          style,
+                        }: {
+                          index: number
+                          key: string
+                          style: React.CSSProperties
+                        }) => {
+                          const row = gridRows[index]
+                          if (!row) {
+                            return null
+                          }
+
+                          if (row.kind === 'header') {
+                            return (
+                              <div
+                                key={key}
+                                style={style}
+                                className="text-muted-foreground px-2 pt-2 text-xs font-medium"
+                              >
+                                {row.title}
+                              </div>
+                            )
+                          }
+
+                          return (
+                            <div key={key} style={style} className="px-1 py-1">
+                              <div
+                                className="grid gap-2"
+                                style={{
+                                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                                }}
+                              >
+                                {row.entries.map((entry) => (
+                                  <div key={entry.path}>
+                                    {rowForEntry(entry)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <VirtualizedList
+                            autoHeight
+                            width={width}
+                            height={height}
+                            rowCount={gridRows.length}
+                            rowHeight={({ index }) => {
+                              const row = gridRows[index]
+                              if (!row) {
+                                return GRID_FILE_ROW_HEIGHT
+                              }
+
+                              if (row.kind === 'header') {
+                                return GRID_SECTION_HEADER_HEIGHT
+                              }
+
+                              return row.section === 'folders'
+                                ? GRID_FOLDER_ROW_HEIGHT
+                                : GRID_FILE_ROW_HEIGHT
+                            }}
+                            rowRenderer={gridRowRenderer}
+                            isScrolling={isScrolling}
+                            onRowsRendered={handleGridRowsRendered}
+                            onScroll={onChildScroll}
+                            scrollTop={scrollTop}
+                            overscanRowCount={5}
+                          />
+                        )
+                      }
+
+                      return (
+                        <VirtualizedList
+                          autoHeight
+                          width={width}
+                          height={height}
+                          rowCount={listCombined.length}
+                          rowHeight={LIST_VIRTUAL_ROW_HEIGHT}
+                          rowRenderer={listRowRenderer}
+                          onRowsRendered={handleListRowsRendered}
+                          onScroll={onChildScroll}
+                          scrollTop={scrollTop}
+                          isScrolling={isScrolling}
+                          overscanRowCount={10}
+                        />
+                      )
+                    }}
+                  </AutoSizer>
+                </div>
+              )}
+            </WindowScroller>
+          ) : null}
+          {isLoadingMoreEntries ? (
+            <p className="text-muted-foreground py-3 text-center text-xs">
+              Loading more…
+            </p>
+          ) : null}
+          {!hasMoreEntries && entries.length > 0 ? (
+            <p className="text-muted-foreground py-3 text-center text-xs">
+              End of results
+            </p>
+          ) : null}
         </div>
       )}
 

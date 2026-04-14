@@ -1,7 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { FolderPlus, Shield, Upload } from 'lucide-react'
-import { useEffect, useReducer, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
@@ -49,6 +56,7 @@ type UploadApiResponse = {
 }
 
 const MAX_CONCURRENT_UPLOADS = 4
+const FILE_LIST_PAGE_SIZE = 100
 
 function joinTargetPath(targetPath: string, relativePath: string) {
   return normalizePath(
@@ -142,18 +150,30 @@ export function FileExplorer({
   } | null>(null)
   const dragDepthRef = useRef(0)
   const inflightUploadIdsRef = useRef(new Set<string>())
+  const listScrollContainerRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedPath = normalizePath(path)
 
-  const listQuery = useQuery(
+  const firstPageQuery = useQuery(
     trpc.files.list.queryOptions(
       {
         connectionId,
         path: normalizedPath,
+        limit: FILE_LIST_PAGE_SIZE,
+        cursor: null,
       },
       { enabled: Boolean(connectionId) },
     ),
   )
+  const [listPages, setListPages] = useState<
+    Array<NonNullable<typeof firstPageQuery.data>>
+  >([])
+  const [nextCursor, setNextCursor] = useState<{
+    folderOffset: number
+    fileOffset: number
+  } | null>(null)
+  const [hasMoreEntries, setHasMoreEntries] = useState(false)
+  const [isLoadingMoreEntries, setIsLoadingMoreEntries] = useState(false)
   const fileDetailQuery = useQuery(
     trpc.files.stat.queryOptions(
       {
@@ -174,7 +194,10 @@ export function FileExplorer({
   )
 
   const mkdirMutation = useMutation(trpc.files.mkdir.mutationOptions())
-  const entries = listQuery.data?.entries ?? []
+  const entries = useMemo(
+    () => listPages.flatMap((page) => page.entries),
+    [listPages],
+  )
   const canWriteCurrentPath = myAccessQuery.data?.access === 'editor'
   const canManagePermissions =
     myAccessQuery.data?.organizationRole === 'owner' ||
@@ -194,14 +217,65 @@ export function FileExplorer({
     !indexStatusQuery.isError &&
     !indexStatusQuery.data
 
+  useEffect(() => {
+    setListPages([])
+    setNextCursor(null)
+    setHasMoreEntries(false)
+    setIsLoadingMoreEntries(false)
+  }, [connectionId, normalizedPath])
+
+  useEffect(() => {
+    if (!firstPageQuery.data) {
+      return
+    }
+
+    setListPages([firstPageQuery.data])
+    setNextCursor(firstPageQuery.data.nextCursor)
+    setHasMoreEntries(firstPageQuery.data.hasMore)
+  }, [firstPageQuery.data])
+
   async function invalidateDirectory(pathToInvalidate: string) {
     await queryClient.invalidateQueries(
       trpc.files.list.queryFilter({
         connectionId,
         path: pathToInvalidate,
+        cursor: null,
+        limit: FILE_LIST_PAGE_SIZE,
       }),
     )
   }
+
+  const loadMoreEntries = useCallback(async () => {
+    if (!nextCursor || !hasMoreEntries || isLoadingMoreEntries) {
+      return
+    }
+
+    setIsLoadingMoreEntries(true)
+    try {
+      const page = await queryClient.fetchQuery(
+        trpc.files.list.queryOptions({
+          connectionId,
+          path: normalizedPath,
+          limit: FILE_LIST_PAGE_SIZE,
+          cursor: nextCursor,
+        }),
+      )
+
+      setListPages((current) => [...current, page])
+      setNextCursor(page.nextCursor)
+      setHasMoreEntries(page.hasMore)
+    } finally {
+      setIsLoadingMoreEntries(false)
+    }
+  }, [
+    connectionId,
+    hasMoreEntries,
+    isLoadingMoreEntries,
+    nextCursor,
+    normalizedPath,
+    queryClient,
+    trpc.files.list,
+  ])
 
   async function refreshExplorerPermissions() {
     await Promise.all([
@@ -466,8 +540,11 @@ export function FileExplorer({
                 </div>
               </div>
             </div>
-            <div className="relative min-h-0 flex-1 overflow-auto px-0 py-0 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]">
-              {listQuery.isPending ? (
+            <div
+              ref={listScrollContainerRef}
+              className="relative min-h-0 flex-1 overflow-auto px-0 py-0 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
+            >
+              {firstPageQuery.isPending ? (
                 <div className="space-y-4">
                   <div className="flex justify-end gap-2 pb-2">
                     <Skeleton className="h-9 w-9 rounded-md" />
@@ -480,10 +557,10 @@ export function FileExplorer({
                     ))}
                   </div>
                 </div>
-              ) : listQuery.isError ? (
+              ) : firstPageQuery.isError ? (
                 <div className="flex h-full min-h-56 items-center justify-center rounded-lg p-6 text-center">
                   <p className="text-destructive text-sm">
-                    {listQuery.error?.message ?? 'Could not load files.'}
+                    {firstPageQuery.error?.message ?? 'Could not load files.'}
                   </p>
                 </div>
               ) : (
@@ -493,6 +570,10 @@ export function FileExplorer({
                   canWriteCurrentPath={canWriteCurrentPath}
                   canManagePermissions={canManagePermissions}
                   entries={entries}
+                  hasMoreEntries={hasMoreEntries}
+                  isLoadingMoreEntries={isLoadingMoreEntries}
+                  onLoadMoreEntries={loadMoreEntries}
+                  scrollContainerRef={listScrollContainerRef}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   onNavigate={onPathChange}

@@ -1,6 +1,7 @@
 import {
   Folder,
   HardDrive,
+  Layers,
   MoreVertical,
   PencilLine,
   Plus,
@@ -32,6 +33,7 @@ type ConnectionsGridProps = {
   onCreate: () => void
   onEdit: (connection: ConnectionListItem) => void
   onDelete: (connection: ConnectionListItem) => void
+  onManageIndexing: (connection: ConnectionListItem) => void
 }
 
 function sortConnections(
@@ -87,6 +89,7 @@ export function ConnectionsGrid({
   onCreate,
   onEdit,
   onDelete,
+  onManageIndexing,
 }: ConnectionsGridProps) {
   const [sortField, setSortField] = useState<ToolbarSortField>('name')
   const [sortAscending, setSortAscending] = useState(true)
@@ -181,6 +184,7 @@ export function ConnectionsGrid({
                     connection={connection}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onManageIndexing={onManageIndexing}
                   />
                 </li>
               ))}
@@ -197,7 +201,8 @@ function ConnectionTile({
   connection,
   onEdit,
   onDelete,
-}: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete'> & {
+  onManageIndexing,
+}: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete' | 'onManageIndexing'> & {
   canManageConnections: boolean
   connection: ConnectionListItem
 }) {
@@ -255,6 +260,15 @@ function ConnectionTile({
             >
               <PencilLine className="size-4" />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation()
+                onManageIndexing(connection)
+              }}
+            >
+              <Layers className="size-4" />
+              Manage indexing
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

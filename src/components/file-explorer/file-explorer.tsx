@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { FolderPlus, Shield, Upload } from 'lucide-react'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Button } from '#/components/ui/button'
 import { Skeleton } from '#/components/ui/skeleton'
 import { useTRPC } from '#/integrations/trpc/react'
@@ -177,6 +179,20 @@ export function FileExplorer({
   const canManagePermissions =
     myAccessQuery.data?.organizationRole === 'owner' ||
     myAccessQuery.data?.organizationRole === 'admin'
+  const indexStatusQuery = useQuery(
+    trpc.indexing.status.queryOptions(
+      { connectionId },
+      {
+        enabled: Boolean(connectionId) && canManagePermissions,
+        retry: false,
+      },
+    ),
+  )
+  const showNoIndexAlert =
+    canManagePermissions &&
+    !indexStatusQuery.isPending &&
+    !indexStatusQuery.isError &&
+    !indexStatusQuery.data
 
   async function invalidateDirectory(pathToInvalidate: string) {
     await queryClient.invalidateQueries(
@@ -380,6 +396,21 @@ export function FileExplorer({
             }}
           >
             <div className="mb-0 flex flex-col gap-3 px-0 py-3 sm:px-0">
+              {showNoIndexAlert ? (
+                <Alert>
+                  <AlertTitle>No index has been run yet</AlertTitle>
+                  <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      To start indexing this connection, open the indexing page.
+                    </span>
+                    <Button asChild type="button" size="sm" variant="outline">
+                      <Link to="/indexing/$cid" params={{ cid: connectionId }}>
+                        Go to indexing page
+                      </Link>
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0 flex-1">
                   <ExplorerBreadcrumb
@@ -435,7 +466,6 @@ export function FileExplorer({
                 </div>
               </div>
             </div>
-
             <div className="relative min-h-0 flex-1 overflow-auto px-0 py-0 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]">
               {listQuery.isPending ? (
                 <div className="space-y-4">

@@ -20,6 +20,7 @@ type ConnectionsWorkspaceProps = {
   onCreate: (input: CreateConnectionInput) => Promise<void>
   onUpdate: (input: UpdateConnectionInput) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onManageIndexing: (connection: ConnectionListItem) => void
   testBeforeCreate?: (config: ConnectionConfig) => Promise<void>
 }
 
@@ -33,6 +34,7 @@ export function ConnectionsWorkspace({
   onCreate,
   onUpdate,
   onDelete,
+  onManageIndexing,
   testBeforeCreate,
 }: ConnectionsWorkspaceProps) {
   const [createOpen, setCreateOpen] = useState(false)
@@ -77,6 +79,12 @@ export function ConnectionsWorkspace({
               return
             }
             setEditingConnection(connection)
+          }}
+          onManageIndexing={(connection) => {
+            if (!canManageConnections) {
+              return
+            }
+            onManageIndexing(connection)
           }}
         />
       </main>

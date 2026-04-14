@@ -1,10 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { HardDrive } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 import type {
+  ConnectionListItem,
   CreateConnectionInput,
   UpdateConnectionInput,
 } from '#/lib/connections.ts'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
 
 import { useTRPC } from '#/integrations/trpc/react'
 
@@ -17,8 +32,11 @@ type ConnectionsFeatureProps = {
 export function ConnectionsFeature({
   activeOrganizationId,
 }: ConnectionsFeatureProps) {
+  const navigate = useNavigate()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const [createdConnection, setCreatedConnection] =
+    useState<ConnectionListItem | null>(null)
   const adminOnlyMessage =
     'Only team owners and admins can manage permissions here.'
   const canLoadConnections = Boolean(activeOrganizationId)
@@ -90,7 +108,7 @@ export function ConnectionsFeature({
 
     try {
       const connection = await createConnectionMutation.mutateAsync(input)
-      toast.success(`Created ${connection.name}.`)
+      setCreatedConnection(connection)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create connection.'
@@ -127,26 +145,80 @@ export function ConnectionsFeature({
     }
   }
 
+  function handleManageIndexing(connection: ConnectionListItem) {
+    void navigate({
+      to: '/indexing/$cid',
+      params: { cid: connection.id },
+    })
+  }
+
   return (
-    <ConnectionsWorkspace
-      key={activeOrganizationId ?? 'no-active-organization'}
-      canManageConnections={canManageConnections}
-      connections={connectionsQuery.data ?? []}
-      isLoading={connectionsQuery.isPending}
-      isRefreshing={connectionsQuery.isRefetching}
-      isDeleting={deleteConnectionMutation.isPending}
-      errorMessage={
-        activeOrganizationId
-          ? (connectionsQuery.error?.message ?? null)
-          : 'Choose an active team from the header to load connections.'
-      }
-      onCreate={handleCreateConnection}
-      onDelete={handleDeleteConnection}
-      onUpdate={handleUpdateConnection}
-      testBeforeCreate={async (config) => {
-        assertCanManageConnections()
-        await testConnectionMutation.mutateAsync({ config })
-      }}
-    />
+    <>
+      <ConnectionsWorkspace
+        key={activeOrganizationId ?? 'no-active-organization'}
+        canManageConnections={canManageConnections}
+        connections={connectionsQuery.data ?? []}
+        isLoading={connectionsQuery.isPending}
+        isRefreshing={connectionsQuery.isRefetching}
+        isDeleting={deleteConnectionMutation.isPending}
+        errorMessage={
+          activeOrganizationId
+            ? (connectionsQuery.error?.message ?? null)
+            : 'Choose an active team from the header to load connections.'
+        }
+        onCreate={handleCreateConnection}
+        onDelete={handleDeleteConnection}
+        onUpdate={handleUpdateConnection}
+        onManageIndexing={handleManageIndexing}
+        testBeforeCreate={async (config) => {
+          assertCanManageConnections()
+          await testConnectionMutation.mutateAsync({ config })
+        }}
+      />
+
+      <AlertDialog
+        open={Boolean(createdConnection)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreatedConnection(null)
+          }
+        }}
+      >
+        <AlertDialogContent className="border-border bg-card border">
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <HardDrive />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Storage drive added</AlertDialogTitle>
+            <AlertDialogDescription>
+              {createdConnection
+                ? `${createdConnection.name} is connected. Indexing is running in the background.`
+                : 'Connection created successfully.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!createdConnection) {
+                  return
+                }
+
+                void navigate({
+                  to: '/indexing/$cid',
+                  params: { cid: createdConnection.id },
+                }).catch(() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.assign(`/indexing/${createdConnection.id}`)
+                  }
+                })
+              }}
+            >
+              View progress
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

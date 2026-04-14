@@ -4,6 +4,7 @@ import {
   verifyFileAccess,
   verifyFilePermission,
 } from '#/lib/storage/auth-guard.ts'
+import { indexInsertEntry } from '#/lib/indexing/index.ts'
 import { resolveProvider } from '#/lib/storage/index.ts'
 import { PathError } from '#/lib/storage/path-utils.ts'
 import {
@@ -67,15 +68,17 @@ export const Route = createFileRoute('/api/files/upload')({
           throw e
         }
 
+        const normalizedConnectionId = connectionId.trim()
+
         await verifyFilePermission({
           request,
-          connectionId: connectionId.trim(),
+          connectionId: normalizedConnectionId,
           path: requestedPath,
           action: 'write',
         })
 
         const provider = await resolveProvider(
-          connectionId.trim(),
+          normalizedConnectionId,
           organizationId,
         )
         const { resolvedPath, conflictResolution } =
@@ -86,6 +89,7 @@ export const Route = createFileRoute('/api/files/upload')({
           file.stream(),
           file.size,
         )
+        await indexInsertEntry(normalizedConnectionId, entry)
 
         return Response.json({
           entry: serializeEntryDates(entry),

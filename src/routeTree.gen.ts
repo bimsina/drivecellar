@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexingRouteImport } from './routes/indexing'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrganizationOrganizationViewRouteImport } from './routes/organization/$organizationView'
+import { Route as IndexingCidRouteImport } from './routes/indexing/$cid'
 import { Route as AuthAuthViewRouteImport } from './routes/auth/$authView'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
 import { Route as STokenRouteRouteImport } from './routes/s/$token/route'
@@ -25,6 +27,11 @@ import { Route as ApiFilesUploadRouteImport } from './routes/api/files/upload'
 import { Route as ApiFilesDownloadRouteImport } from './routes/api/files/download'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const IndexingRoute = IndexingRouteImport.update({
+  id: '/indexing',
+  path: '/indexing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -36,6 +43,11 @@ const OrganizationOrganizationViewRoute =
     path: '/organization/$organizationView',
     getParentRoute: () => rootRouteImport,
   } as any)
+const IndexingCidRoute = IndexingCidRouteImport.update({
+  id: '/$cid',
+  path: '/$cid',
+  getParentRoute: () => IndexingRoute,
+} as any)
 const AuthAuthViewRoute = AuthAuthViewRouteImport.update({
   id: '/auth/$authView',
   path: '/auth/$authView',
@@ -104,10 +116,12 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/indexing': typeof IndexingRouteWithChildren
   '/c/$id': typeof CIdRouteRouteWithChildren
   '/s/$token': typeof STokenRouteRouteWithChildren
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/indexing/$cid': typeof IndexingCidRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
@@ -121,8 +135,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/indexing': typeof IndexingRouteWithChildren
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/indexing/$cid': typeof IndexingCidRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
@@ -137,10 +153,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/indexing': typeof IndexingRouteWithChildren
   '/c/$id': typeof CIdRouteRouteWithChildren
   '/s/$token': typeof STokenRouteRouteWithChildren
   '/account/$accountView': typeof AccountAccountViewRoute
   '/auth/$authView': typeof AuthAuthViewRoute
+  '/indexing/$cid': typeof IndexingCidRoute
   '/organization/$organizationView': typeof OrganizationOrganizationViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/download': typeof ApiFilesDownloadRoute
@@ -156,10 +174,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/indexing'
     | '/c/$id'
     | '/s/$token'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/indexing/$cid'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
@@ -173,8 +193,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/indexing'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/indexing/$cid'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
@@ -188,10 +210,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/indexing'
     | '/c/$id'
     | '/s/$token'
     | '/account/$accountView'
     | '/auth/$authView'
+    | '/indexing/$cid'
     | '/organization/$organizationView'
     | '/api/auth/$'
     | '/api/files/download'
@@ -206,6 +230,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  IndexingRoute: typeof IndexingRouteWithChildren
   CIdRouteRoute: typeof CIdRouteRouteWithChildren
   STokenRouteRoute: typeof STokenRouteRouteWithChildren
   AccountAccountViewRoute: typeof AccountAccountViewRoute
@@ -220,6 +245,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/indexing': {
+      id: '/indexing'
+      path: '/indexing'
+      fullPath: '/indexing'
+      preLoaderRoute: typeof IndexingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -233,6 +265,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/organization/$organizationView'
       preLoaderRoute: typeof OrganizationOrganizationViewRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/indexing/$cid': {
+      id: '/indexing/$cid'
+      path: '/$cid'
+      fullPath: '/indexing/$cid'
+      preLoaderRoute: typeof IndexingCidRouteImport
+      parentRoute: typeof IndexingRoute
     }
     '/auth/$authView': {
       id: '/auth/$authView'
@@ -328,6 +367,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface IndexingRouteChildren {
+  IndexingCidRoute: typeof IndexingCidRoute
+}
+
+const IndexingRouteChildren: IndexingRouteChildren = {
+  IndexingCidRoute: IndexingCidRoute,
+}
+
+const IndexingRouteWithChildren = IndexingRoute._addFileChildren(
+  IndexingRouteChildren,
+)
+
 interface CIdRouteRouteChildren {
   CIdSplatRoute: typeof CIdSplatRoute
   CIdIndexRoute: typeof CIdIndexRoute
@@ -358,6 +409,7 @@ const STokenRouteRouteWithChildren = STokenRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  IndexingRoute: IndexingRouteWithChildren,
   CIdRouteRoute: CIdRouteRouteWithChildren,
   STokenRouteRoute: STokenRouteRouteWithChildren,
   AccountAccountViewRoute: AccountAccountViewRoute,

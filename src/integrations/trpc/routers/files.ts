@@ -12,6 +12,12 @@ import {
   resolvePermission,
 } from '#/lib/permissions.ts'
 import { permissionAccessSchema } from '#/lib/connections.ts'
+import {
+  indexDeleteEntry,
+  indexInsertEntry,
+  indexRenameEntry,
+  listFromIndex,
+} from '#/lib/indexing/index.ts'
 import { resolveProvider } from '#/lib/storage/index.ts'
 import { normalizePath, PathError } from '#/lib/storage/path-utils.ts'
 
@@ -35,6 +41,10 @@ const listResultSchema = z.object({
   currentAccess: permissionAccessSchema,
   entries: z.array(fileListEntrySchema),
 })
+
+function pathName(path: string) {
+  return path.split('/').filter(Boolean).at(-1) ?? ''
+}
 
 function safeNormalize(path: string) {
   try {
@@ -136,18 +146,15 @@ export const filesRouter = createTRPCRouter({
         })
       }
 
-      const provider = await resolveProvider(
-        input.connectionId,
-        ctx.organizationId,
-      )
-      const result = await provider.list(path)
-      const entriesWithAccess = result.entries.map((entry) => ({
+      const entries = await listFromIndex(input.connectionId, path)
+
+      const entriesWithAccess = entries.map((entry) => ({
         ...entry,
         access: resolvePermissionFromContext(entry.path, permissionContext),
       }))
 
       return {
-        ...result,
+        path,
         currentAccess,
         entries: entriesWithAccess.filter((entry) => {
           if (canRead(entry.access)) {
@@ -210,6 +217,14 @@ export const filesRouter = createTRPCRouter({
         ctx.organizationId,
       )
       await provider.mkdir(path)
+      await indexInsertEntry(input.connectionId, {
+        name: pathName(path),
+        path,
+        isDirectory: true,
+        size: null,
+        mimeType: null,
+        lastModified: new Date(),
+      })
     }),
 
   delete: organizationProcedure
@@ -233,6 +248,7 @@ export const filesRouter = createTRPCRouter({
       )
       await provider.delete(path)
       await deleteScopedPermissions(input.connectionId, path)
+      await indexDeleteEntry(input.connectionId, path)
     }),
 
   rename: organizationProcedure
@@ -264,5 +280,6 @@ export const filesRouter = createTRPCRouter({
       )
       await provider.rename(oldPath, newPath)
       await renameScopedPermissions(input.connectionId, oldPath, newPath)
+      await indexRenameEntry(input.connectionId, oldPath, newPath)
     }),
 })

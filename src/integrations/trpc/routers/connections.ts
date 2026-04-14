@@ -13,6 +13,11 @@ import { clearCachedProvider } from '#/lib/storage/index.ts'
 import { testConnectionConfig } from '#/lib/storage/test-connection.ts'
 import type { ConnectionRow } from '#/lib/connection-repository.ts'
 import {
+  cancelRunningIndexJob,
+  clearConnectionIndex,
+  startIndexJob,
+} from '#/lib/indexing/index.ts'
+import {
   parseConnectionConfig,
   serializeConnectionConfig,
 } from '#/lib/connection-config-storage.ts'
@@ -207,6 +212,11 @@ export const connectionsRouter = createTRPCRouter({
         })
       }
 
+      await startIndexJob(connection.id, ctx.organizationId, {
+        trigger: 'auto',
+        triggeredByUserId: ctx.sessionData.user.id,
+      })
+
       return toClientConnection(connection)
     }),
 
@@ -230,6 +240,8 @@ export const connectionsRouter = createTRPCRouter({
         parseConnectionConfig(existingConnection.config),
         input.config,
       )
+      const serializedConfig = serializeConnectionConfig(mergedConfig)
+      const hasConfigChanged = existingConnection.config !== serializedConfig
 
       const updatedConnection = await updateConnectionRow(
         input.id,
@@ -239,7 +251,7 @@ export const connectionsRouter = createTRPCRouter({
           description: normalizeOptionalText(input.description),
           type: mergedConfig.type,
           defaultAccess: input.defaultAccess,
-          config: serializeConnectionConfig(mergedConfig),
+          config: serializedConfig,
         },
       )
 
@@ -251,6 +263,11 @@ export const connectionsRouter = createTRPCRouter({
       }
 
       clearCachedProvider(input.id)
+
+      if (hasConfigChanged) {
+        cancelRunningIndexJob(input.id)
+        await clearConnectionIndex(input.id)
+      }
 
       return toClientConnection(updatedConnection)
     }),

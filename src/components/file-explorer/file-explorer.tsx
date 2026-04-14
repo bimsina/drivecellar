@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderPlus, Upload } from 'lucide-react'
+import { FolderPlus, Shield, Upload } from 'lucide-react'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -12,6 +12,7 @@ import { normalizePath } from '#/lib/storage/path-utils'
 import { ExplorerBreadcrumb } from './breadcrumb-nav'
 import { CreateFolderDialog } from './create-folder-dialog'
 import { FileList, type FileListViewMode } from './file-list'
+import { PathAccessDialog } from './path-access-dialog'
 import { UploadButton } from './upload-button'
 import { UploadQueuePanel } from './upload-queue-panel'
 import type { PreparedUploadBatch, QueuedUpload } from './upload-types'
@@ -51,6 +52,17 @@ function joinTargetPath(targetPath: string, relativePath: string) {
   return normalizePath(
     targetPath === '/' ? `/${relativePath}` : `${targetPath}/${relativePath}`,
   )
+}
+
+function itemNameFromPath(path: string, fallbackRootName: string) {
+  const normalizedPath = normalizePath(path)
+
+  if (normalizedPath === '/') {
+    return fallbackRootName
+  }
+
+  const segments = normalizedPath.split('/').filter(Boolean)
+  return segments.at(-1) ?? fallbackRootName
 }
 
 function uploadWithProgress(
@@ -121,6 +133,11 @@ export function FileExplorer({
   const [uploads, dispatchUpload] = useReducer(uploadQueueReducer, [])
   const [queueExpanded, setQueueExpanded] = useState(false)
   const [isDragActive, setIsDragActive] = useState(false)
+  const [manageAccessTarget, setManageAccessTarget] = useState<{
+    path: string
+    itemName: string
+    isDirectory: boolean
+  } | null>(null)
   const dragDepthRef = useRef(0)
   const inflightUploadIdsRef = useRef(new Set<string>())
 
@@ -144,9 +161,22 @@ export function FileExplorer({
       { enabled: Boolean(connectionId) && Boolean(selectedFilePath) },
     ),
   )
+  const myAccessQuery = useQuery(
+    trpc.permissions.getMyAccess.queryOptions(
+      {
+        connectionId,
+        path: normalizedPath,
+      },
+      { enabled: Boolean(connectionId) },
+    ),
+  )
 
   const mkdirMutation = useMutation(trpc.files.mkdir.mutationOptions())
   const entries = listQuery.data?.entries ?? []
+  const canWriteCurrentPath = myAccessQuery.data?.access === 'editor'
+  const canManagePermissions =
+    myAccessQuery.data?.organizationRole === 'owner' ||
+    myAccessQuery.data?.organizationRole === 'admin'
 
   async function invalidateDirectory(pathToInvalidate: string) {
     await queryClient.invalidateQueries(
@@ -157,10 +187,26 @@ export function FileExplorer({
     )
   }
 
+  async function refreshExplorerPermissions() {
+    await Promise.all([
+      invalidateDirectory(normalizedPath),
+      queryClient.invalidateQueries(
+        trpc.permissions.getMyAccess.queryFilter({
+          connectionId,
+          path: normalizedPath,
+        }),
+      ),
+    ])
+  }
+
   async function createEmptyDirectories(
     batch: PreparedUploadBatch,
     targetPath: string,
   ) {
+    if (!canWriteCurrentPath) {
+      return
+    }
+
     if (batch.emptyDirectories.length === 0) {
       return
     }
@@ -177,6 +223,10 @@ export function FileExplorer({
   }
 
   async function enqueueBatch(batch: PreparedUploadBatch, targetPath: string) {
+    if (!canWriteCurrentPath) {
+      return
+    }
+
     try {
       await createEmptyDirectories(batch, targetPath)
     } catch (error) {
@@ -198,11 +248,15 @@ export function FileExplorer({
   }
 
   function handleSelectedFiles(files: File[]) {
+    if (!canWriteCurrentPath) {
+      return
+    }
+
     void enqueueBatch(createPreparedUploadBatch(files), normalizedPath)
   }
 
   async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
-    if (!hasFilePayload(event.dataTransfer)) {
+    if (!canWriteCurrentPath || !hasFilePayload(event.dataTransfer)) {
       return
     }
 
@@ -276,6 +330,16 @@ export function FileExplorer({
     selectedFilePath,
   ])
 
+  useEffect(() => {
+    if (canWriteCurrentPath) {
+      return
+    }
+
+    setCreateFolderOpen(false)
+    dragDepthRef.current = 0
+    setIsDragActive(false)
+  }, [canWriteCurrentPath])
+
   return (
     <>
       <div className="mx-auto flex w-full min-w-0 flex-1 flex-col">
@@ -283,7 +347,7 @@ export function FileExplorer({
           <div
             className="relative flex min-h-112 min-w-0 flex-1 flex-col overflow-hidden bg-transparent p-0"
             onDragEnter={(event) => {
-              if (!hasFilePayload(event.dataTransfer)) {
+              if (!canWriteCurrentPath || !hasFilePayload(event.dataTransfer)) {
                 return
               }
 
@@ -292,7 +356,7 @@ export function FileExplorer({
               setIsDragActive(true)
             }}
             onDragOver={(event) => {
-              if (!hasFilePayload(event.dataTransfer)) {
+              if (!canWriteCurrentPath || !hasFilePayload(event.dataTransfer)) {
                 return
               }
 
@@ -301,7 +365,7 @@ export function FileExplorer({
               setIsDragActive(true)
             }}
             onDragLeave={(event) => {
-              if (!hasFilePayload(event.dataTransfer)) {
+              if (!canWriteCurrentPath || !hasFilePayload(event.dataTransfer)) {
                 return
               }
 
@@ -326,20 +390,48 @@ export function FileExplorer({
                   />
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
-                    onClick={() => setCreateFolderOpen(true)}
-                  >
-                    <FolderPlus className="size-4" />
-                    New folder
-                  </Button>
-                  <UploadButton
-                    onSelectFiles={handleSelectedFiles}
-                    onSelectFolder={handleSelectedFiles}
-                  />
+                  {canManagePermissions ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
+                      onClick={() => {
+                        setManageAccessTarget({
+                          path: normalizedPath,
+                          itemName:
+                            normalizedPath === '/'
+                              ? `${connectionName} root`
+                              : itemNameFromPath(
+                                  normalizedPath,
+                                  connectionName,
+                                ),
+                          isDirectory: true,
+                        })
+                      }}
+                    >
+                      <Shield className="size-4" />
+                      Manage access
+                    </Button>
+                  ) : null}
+                  {canWriteCurrentPath ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
+                        onClick={() => setCreateFolderOpen(true)}
+                      >
+                        <FolderPlus className="size-4" />
+                        New folder
+                      </Button>
+                      <UploadButton
+                        onSelectFiles={handleSelectedFiles}
+                        onSelectFolder={handleSelectedFiles}
+                      />
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -368,6 +460,8 @@ export function FileExplorer({
                 <FileList
                   connectionId={connectionId}
                   currentPath={normalizedPath}
+                  canWriteCurrentPath={canWriteCurrentPath}
+                  canManagePermissions={canManagePermissions}
                   entries={entries}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
@@ -386,10 +480,11 @@ export function FileExplorer({
                       : null
                   }
                   onSelectedFilePathChange={onSelectedFilePathChange}
+                  onManageAccess={setManageAccessTarget}
                 />
               )}
 
-              {isDragActive ? (
+              {canWriteCurrentPath && isDragActive ? (
                 <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 border-2 border-dashed p-5 backdrop-blur-sm">
                   <div className="flex h-full flex-col items-center justify-center text-center">
                     <div className="bg-primary/10 text-primary rounded-full p-4">
@@ -408,12 +503,14 @@ export function FileExplorer({
             </div>
           </div>
 
-          <CreateFolderDialog
-            open={createFolderOpen}
-            onOpenChange={setCreateFolderOpen}
-            connectionId={connectionId}
-            parentPath={normalizedPath}
-          />
+          {canWriteCurrentPath ? (
+            <CreateFolderDialog
+              open={createFolderOpen}
+              onOpenChange={setCreateFolderOpen}
+              connectionId={connectionId}
+              parentPath={normalizedPath}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -428,6 +525,22 @@ export function FileExplorer({
           dispatchUpload({ type: 'remove', id })
         }}
       />
+
+      {manageAccessTarget ? (
+        <PathAccessDialog
+          connectionId={connectionId}
+          path={manageAccessTarget.path}
+          itemName={manageAccessTarget.itemName}
+          isDirectory={manageAccessTarget.isDirectory}
+          open={Boolean(manageAccessTarget)}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setManageAccessTarget(null)
+            }
+          }}
+          onPermissionsChanged={refreshExplorerPermissions}
+        />
+      ) : null}
     </>
   )
 }

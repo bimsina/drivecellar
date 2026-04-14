@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { z } from 'zod/v4'
 
 import {
+  listVisibleConnectionsForUser,
   createConnectionRow,
   deleteConnectionRow,
   getConnectionByIdForOrganization,
@@ -29,8 +30,16 @@ import type {
   ConnectionConfig,
   UpdateConnectionConfig,
 } from '#/lib/connections.ts'
+import {
+  canAccessConnection,
+  isOrganizationAdminRole,
+} from '#/lib/permissions.ts'
 
-import { createTRPCRouter, organizationProcedure } from '../init'
+import {
+  adminProcedure,
+  createTRPCRouter,
+  organizationProcedure,
+} from '../init'
 
 function normalizeOptionalText(value: string | undefined) {
   return value?.trim() ? value.trim() : null
@@ -80,7 +89,30 @@ function mergeConnectionConfig(
   }
 }
 
+const organizationRoleSchema = z.enum(['owner', 'admin', 'member'])
+const myOrganizationRoleResultSchema = z.object({
+  role: organizationRoleSchema,
+  canManageConnections: z.boolean(),
+})
+
 export const connectionsRouter = createTRPCRouter({
+  getMyOrganizationRole: organizationProcedure
+    .input(listConnectionsInputSchema)
+    .output(myOrganizationRoleResultSchema)
+    .query(({ ctx, input }) => {
+      if (input.organizationId !== ctx.organizationId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Active team does not match the requested query.',
+        })
+      }
+
+      return {
+        role: ctx.organizationRole,
+        canManageConnections: isOrganizationAdminRole(ctx.organizationRole),
+      }
+    }),
+
   list: organizationProcedure
     .input(listConnectionsInputSchema)
     .output(z.array(connectionListItemSchema))
@@ -92,7 +124,12 @@ export const connectionsRouter = createTRPCRouter({
         })
       }
 
-      const rows = await listConnectionsForOrganization(ctx.organizationId)
+      const rows = isOrganizationAdminRole(ctx.organizationRole)
+        ? await listConnectionsForOrganization(ctx.organizationId)
+        : await listVisibleConnectionsForUser(
+            ctx.organizationId,
+            ctx.sessionData.user.id,
+          )
       return rows.map(toClientConnection)
     }),
 
@@ -112,10 +149,24 @@ export const connectionsRouter = createTRPCRouter({
         })
       }
 
+      if (
+        !isOrganizationAdminRole(ctx.organizationRole) &&
+        !(await canAccessConnection(
+          ctx.sessionData.user.id,
+          ctx.organizationId,
+          input.id,
+        ))
+      ) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Connection not found.',
+        })
+      }
+
       return toClientConnection(connection)
     }),
 
-  testConfig: organizationProcedure
+  testConfig: adminProcedure
     .input(testConnectionConfigInputSchema)
     .output(z.object({ ok: z.literal(true) }))
     .mutation(async ({ input }) => {
@@ -134,7 +185,7 @@ export const connectionsRouter = createTRPCRouter({
       return { ok: true as const }
     }),
 
-  create: organizationProcedure
+  create: adminProcedure
     .input(createConnectionInputSchema)
     .output(connectionListItemSchema)
     .mutation(async ({ ctx, input }) => {
@@ -143,6 +194,7 @@ export const connectionsRouter = createTRPCRouter({
         name: input.name.trim(),
         description: normalizeOptionalText(input.description),
         type: input.config.type,
+        defaultAccess: input.defaultAccess,
         organizationId: ctx.organizationId,
         config: serializeConnectionConfig(input.config),
         createdBy: ctx.sessionData.user.id,
@@ -158,7 +210,7 @@ export const connectionsRouter = createTRPCRouter({
       return toClientConnection(connection)
     }),
 
-  update: organizationProcedure
+  update: adminProcedure
     .input(updateConnectionInputSchema)
     .output(connectionListItemSchema)
     .mutation(async ({ ctx, input }) => {
@@ -186,6 +238,7 @@ export const connectionsRouter = createTRPCRouter({
           name: input.name.trim(),
           description: normalizeOptionalText(input.description),
           type: mergedConfig.type,
+          defaultAccess: input.defaultAccess,
           config: serializeConnectionConfig(mergedConfig),
         },
       )
@@ -202,7 +255,7 @@ export const connectionsRouter = createTRPCRouter({
       return toClientConnection(updatedConnection)
     }),
 
-  remove: organizationProcedure
+  remove: adminProcedure
     .input(deleteConnectionInputSchema)
     .output(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {

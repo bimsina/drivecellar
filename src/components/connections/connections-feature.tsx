@@ -19,6 +19,8 @@ export function ConnectionsFeature({
 }: ConnectionsFeatureProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const adminOnlyMessage =
+    'Only team owners and admins can manage permissions here.'
   const canLoadConnections = Boolean(activeOrganizationId)
   const queryInput = {
     organizationId: activeOrganizationId ?? '',
@@ -41,6 +43,13 @@ export function ConnectionsFeature({
       enabled: canLoadConnections,
     }),
   )
+  const myRoleQuery = useQuery(
+    trpc.connections.getMyOrganizationRole.queryOptions(queryInput, {
+      enabled: canLoadConnections,
+    }),
+  )
+  const canManageConnections =
+    myRoleQuery.data?.canManageConnections === true && canLoadConnections
 
   const createConnectionMutation = useMutation(
     trpc.connections.create.mutationOptions({
@@ -70,7 +79,15 @@ export function ConnectionsFeature({
     trpc.connections.testConfig.mutationOptions(),
   )
 
+  function assertCanManageConnections() {
+    if (!canManageConnections) {
+      throw new Error(adminOnlyMessage)
+    }
+  }
+
   async function handleCreateConnection(input: CreateConnectionInput) {
+    assertCanManageConnections()
+
     try {
       const connection = await createConnectionMutation.mutateAsync(input)
       toast.success(`Created ${connection.name}.`)
@@ -83,6 +100,8 @@ export function ConnectionsFeature({
   }
 
   async function handleUpdateConnection(input: UpdateConnectionInput) {
+    assertCanManageConnections()
+
     try {
       const connection = await updateConnectionMutation.mutateAsync(input)
       toast.success(`Saved ${connection.name}.`)
@@ -95,6 +114,8 @@ export function ConnectionsFeature({
   }
 
   async function handleDeleteConnection(id: string) {
+    assertCanManageConnections()
+
     try {
       await deleteConnectionMutation.mutateAsync({ id })
       toast.success('Connection deleted.')
@@ -109,6 +130,7 @@ export function ConnectionsFeature({
   return (
     <ConnectionsWorkspace
       key={activeOrganizationId ?? 'no-active-organization'}
+      canManageConnections={canManageConnections}
       connections={connectionsQuery.data ?? []}
       isLoading={connectionsQuery.isPending}
       isRefreshing={connectionsQuery.isRefetching}
@@ -122,6 +144,7 @@ export function ConnectionsFeature({
       onDelete={handleDeleteConnection}
       onUpdate={handleUpdateConnection}
       testBeforeCreate={async (config) => {
+        assertCanManageConnections()
         await testConnectionMutation.mutateAsync({ config })
       }}
     />

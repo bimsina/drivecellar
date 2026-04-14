@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type {
   ConnectionConfig,
@@ -12,6 +12,7 @@ import { DeleteConnectionDialog } from './delete-connection-dialog'
 
 type ConnectionsWorkspaceProps = {
   connections: ConnectionListItem[]
+  canManageConnections: boolean
   isLoading: boolean
   isRefreshing?: boolean
   errorMessage?: string | null
@@ -24,6 +25,7 @@ type ConnectionsWorkspaceProps = {
 
 export function ConnectionsWorkspace({
   connections,
+  canManageConnections,
   isLoading,
   isRefreshing = false,
   errorMessage,
@@ -39,21 +41,47 @@ export function ConnectionsWorkspace({
   const [deletingConnection, setDeletingConnection] =
     useState<ConnectionListItem | null>(null)
 
+  useEffect(() => {
+    if (canManageConnections) {
+      return
+    }
+
+    setCreateOpen(false)
+    setEditingConnection(null)
+    setDeletingConnection(null)
+  }, [canManageConnections])
+
   return (
     <>
       <main className="mx-auto flex w-full min-w-0 flex-1 flex-col gap-4">
         <ConnectionsGrid
+          canManageConnections={canManageConnections}
           connections={connections}
           errorMessage={errorMessage}
           isLoading={isLoading}
           isRefreshing={isRefreshing}
-          onCreate={() => setCreateOpen(true)}
-          onDelete={setDeletingConnection}
-          onEdit={setEditingConnection}
+          onCreate={() => {
+            if (!canManageConnections) {
+              return
+            }
+            setCreateOpen(true)
+          }}
+          onDelete={(connection) => {
+            if (!canManageConnections) {
+              return
+            }
+            setDeletingConnection(connection)
+          }}
+          onEdit={(connection) => {
+            if (!canManageConnections) {
+              return
+            }
+            setEditingConnection(connection)
+          }}
         />
       </main>
 
-      {createOpen ? (
+      {canManageConnections && createOpen ? (
         <ConnectionFormDialog
           key="create-connection"
           mode="create"
@@ -66,7 +94,7 @@ export function ConnectionsWorkspace({
         />
       ) : null}
 
-      {editingConnection ? (
+      {canManageConnections && editingConnection ? (
         <ConnectionFormDialog
           key={`edit-${editingConnection.id}`}
           mode="edit"
@@ -84,24 +112,26 @@ export function ConnectionsWorkspace({
         />
       ) : null}
 
-      <DeleteConnectionDialog
-        connection={deletingConnection}
-        open={Boolean(deletingConnection)}
-        isDeleting={isDeleting}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeletingConnection(null)
-          }
-        }}
-        onConfirm={async () => {
-          if (!deletingConnection) {
-            return
-          }
+      {canManageConnections ? (
+        <DeleteConnectionDialog
+          connection={deletingConnection}
+          open={Boolean(deletingConnection)}
+          isDeleting={isDeleting}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingConnection(null)
+            }
+          }}
+          onConfirm={async () => {
+            if (!deletingConnection) {
+              return
+            }
 
-          await onDelete(deletingConnection.id)
-          setDeletingConnection(null)
-        }}
-      />
+            await onDelete(deletingConnection.id)
+            setDeletingConnection(null)
+          }}
+        />
+      ) : null}
     </>
   )
 }

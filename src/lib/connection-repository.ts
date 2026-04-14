@@ -1,7 +1,11 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, exists, ne, or, sql } from 'drizzle-orm'
 
 import { db } from '#/db/index.ts'
-import { connections } from '#/db/schema/index.ts'
+import {
+  connectionPermissions,
+  connections,
+  folderPermissions,
+} from '#/db/schema/index.ts'
 
 export type ConnectionRow = typeof connections.$inferSelect
 type NewConnectionRow = typeof connections.$inferInsert
@@ -11,6 +15,48 @@ export function listConnectionsForOrganization(organizationId: string) {
     .select()
     .from(connections)
     .where(eq(connections.organizationId, organizationId))
+    .orderBy(desc(connections.updatedAt))
+}
+
+export function listVisibleConnectionsForUser(
+  organizationId: string,
+  userId: string,
+) {
+  const connectionPermissionExists = db
+    .select({ value: sql`1` })
+    .from(connectionPermissions)
+    .where(
+      and(
+        eq(connectionPermissions.connectionId, connections.id),
+        eq(connectionPermissions.userId, userId),
+        ne(connectionPermissions.access, 'none'),
+      ),
+    )
+
+  const folderPermissionExists = db
+    .select({ value: sql`1` })
+    .from(folderPermissions)
+    .where(
+      and(
+        eq(folderPermissions.connectionId, connections.id),
+        eq(folderPermissions.userId, userId),
+        ne(folderPermissions.access, 'none'),
+      ),
+    )
+
+  return db
+    .select()
+    .from(connections)
+    .where(
+      and(
+        eq(connections.organizationId, organizationId),
+        or(
+          ne(connections.defaultAccess, 'none'),
+          exists(connectionPermissionExists),
+          exists(folderPermissionExists),
+        ),
+      ),
+    )
     .orderBy(desc(connections.updatedAt))
 }
 
@@ -27,6 +73,15 @@ export async function getConnectionByIdForOrganization(
         eq(connections.organizationId, organizationId),
       ),
     )
+
+  return connection ?? null
+}
+
+export async function getConnectionById(id: string) {
+  const [connection] = await db
+    .select()
+    .from(connections)
+    .where(eq(connections.id, id))
 
   return connection ?? null
 }

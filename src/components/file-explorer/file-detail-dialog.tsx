@@ -1,4 +1,4 @@
-import { Download, FileIcon, Loader2 } from 'lucide-react'
+import { Download, FileIcon, Loader2, Shield } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
@@ -38,9 +38,11 @@ type FileDetailDialogProps = {
   requestedPath?: string | null
   loading?: boolean
   errorMessage?: string | null
+  canManagePermissions?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onDownload: (entry: FileEntry) => void
+  onManageAccess?: (target: { path: string; itemName: string }) => void
 }
 
 export function FileDetailDialog({
@@ -49,9 +51,11 @@ export function FileDetailDialog({
   requestedPath,
   loading = false,
   errorMessage = null,
+  canManagePermissions = false,
   open,
   onOpenChange,
   onDownload,
+  onManageAccess,
 }: FileDetailDialogProps) {
   const [textBody, setTextBody] = useState<string | null>(null)
   const [textError, setTextError] = useState<string | null>(null)
@@ -176,6 +180,23 @@ export function FileDetailDialog({
             </DialogDescription>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {canManagePermissions ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  onManageAccess?.({
+                    path: entry.path,
+                    itemName: entry.name,
+                  })
+                }}
+              >
+                <Shield className="size-4" />
+                Manage access
+              </Button>
+            ) : null}
             <Button
               type="button"
               size="sm"

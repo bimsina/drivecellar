@@ -4,6 +4,7 @@ const trimmedString = z.string().trim()
 const optionalTrimmedString = z.string().trim().optional()
 
 export const connectionTypeSchema = z.enum(['s3', 'local'])
+export const permissionAccessSchema = z.enum(['editor', 'viewer', 'none'])
 
 export const connectionMetadataSchema = z.object({
   name: trimmedString.min(1, 'Connection name is required.').max(120),
@@ -35,6 +36,7 @@ export const connectionConfigSchema = z.discriminatedUnion('type', [
 
 export const createConnectionInputSchema = connectionMetadataSchema.extend({
   config: connectionConfigSchema,
+  defaultAccess: permissionAccessSchema,
 })
 
 export const updateS3ConfigSchema = s3ConfigSchema.extend({
@@ -49,6 +51,7 @@ export const updateConnectionConfigSchema = z.discriminatedUnion('type', [
 export const updateConnectionInputSchema = connectionMetadataSchema.extend({
   id: z.string().min(1),
   config: updateConnectionConfigSchema,
+  defaultAccess: permissionAccessSchema,
 })
 
 export const deleteConnectionInputSchema = z.object({
@@ -75,6 +78,7 @@ export const connectionListItemSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   organizationId: z.string(),
+  defaultAccess: permissionAccessSchema,
   createdBy: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -105,3 +109,4 @@ export type ClientConnectionConfig = z.infer<
   typeof clientConnectionConfigSchema
 >
 export type ConnectionListItem = z.infer<typeof connectionListItemSchema>
+export type PermissionAccess = z.infer<typeof permissionAccessSchema>

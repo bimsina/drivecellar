@@ -9,6 +9,7 @@ export const connections = sqliteTable(
     name: text('name').notNull(),
     description: text('description'),
     type: text('type').notNull(), // "s3" | "local"
+    defaultAccess: text('default_access').notNull(), // "editor" | "viewer" | "none"
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
@@ -24,7 +25,10 @@ export const connections = sqliteTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index('connections_organizationId_idx').on(table.organizationId)],
+  (table) => [
+    index('connections_organizationId_idx').on(table.organizationId),
+    index('connections_defaultAccess_idx').on(table.defaultAccess),
+  ],
 )
 
 export const connectionsRelations = relations(connections, ({ one }) => ({

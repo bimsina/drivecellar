@@ -7,6 +7,7 @@ import {
   List,
   MoreVertical,
   Pencil,
+  Shield,
   Trash2,
 } from 'lucide-react'
 import { useId, useMemo, useState } from 'react'
@@ -59,6 +60,7 @@ import {
 } from '#/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useTRPC } from '#/integrations/trpc/react'
+import type { PermissionAccess } from '#/lib/connections'
 import type { FileEntry } from '#/lib/storage/types'
 import { normalizePath, PathError } from '#/lib/storage/path-utils'
 import { cn } from '#/lib/utils'
@@ -106,11 +108,11 @@ function fileTypeShortLabel(entry: FileEntry) {
   return ext ?? 'File'
 }
 
-function sortEntries(
-  items: FileEntry[],
+function sortEntries<TEntry extends FileEntry>(
+  items: TEntry[],
   field: ToolbarSortField,
   ascending: boolean,
-): FileEntry[] {
+): TEntry[] {
   const copy = [...items]
   copy.sort((a, b) => {
     let cmp = 0
@@ -132,12 +134,18 @@ function sortEntries(
 
 function FolderCard({
   entry,
+  canWrite,
+  canManagePermissions,
   onOpen,
+  onManageAccess,
   onRename,
   onDelete,
 }: {
-  entry: FileEntry
+  entry: ExplorerFileEntry
+  canWrite: boolean
+  canManagePermissions: boolean
   onOpen: () => void
+  onManageAccess: () => void
   onRename: () => void
   onDelete: () => void
 }) {
@@ -153,45 +161,63 @@ function FolderCard({
         </span>
         <span className="min-w-0 flex-1 truncate">{entry.name}</span>
       </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-9 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-            }}
-          >
-            <MoreVertical className="size-[1.125rem]" />
-            <span className="sr-only">More actions for {entry.name}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-40">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation()
-              onRename()
-            }}
-          >
-            <Pencil className="size-4" />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-          >
-            <Trash2 className="size-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {canWrite ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-9 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+            >
+              <MoreVertical className="size-[1.125rem]" />
+              <span className="sr-only">More actions for {entry.name}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-40">
+            {canManagePermissions ? (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onManageAccess()
+                }}
+              >
+                <Shield className="size-4" />
+                Manage access
+              </DropdownMenuItem>
+            ) : null}
+            {canWrite ? (
+              <>
+                {canManagePermissions ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRename()
+                  }}
+                >
+                  <Pencil className="size-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete()
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </div>
   )
 }
@@ -199,14 +225,20 @@ function FolderCard({
 function FileCard({
   connectionId,
   entry,
+  canWrite,
+  canManagePermissions,
   onOpen,
+  onManageAccess,
   onRename,
   onDelete,
   onDownload,
 }: {
   connectionId: string
-  entry: FileEntry
+  entry: ExplorerFileEntry
+  canWrite: boolean
+  canManagePermissions: boolean
   onOpen: () => void
+  onManageAccess: () => void
   onRename: () => void
   onDelete: () => void
   onDownload: () => void
@@ -251,26 +283,41 @@ function FileCard({
               <Download className="size-4" />
               Download
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation()
-                onRename()
-              }}
-            >
-              <Pencil className="size-4" />
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete()
-              }}
-            >
-              <Trash2 className="size-4" />
-              Delete
-            </DropdownMenuItem>
+            {canManagePermissions ? (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onManageAccess()
+                }}
+              >
+                <Shield className="size-4" />
+                Manage access
+              </DropdownMenuItem>
+            ) : null}
+            {canWrite ? (
+              <>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRename()
+                  }}
+                >
+                  <Pencil className="size-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete()
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -300,11 +347,16 @@ function FileCard({
 }
 
 export type FileListViewMode = 'grid' | 'list'
+export type ExplorerFileEntry = FileEntry & {
+  access: PermissionAccess
+}
 
 type FileListProps = {
   connectionId: string
   currentPath: string
-  entries: FileEntry[]
+  canWriteCurrentPath: boolean
+  canManagePermissions: boolean
+  entries: ExplorerFileEntry[]
   viewMode: FileListViewMode
   onViewModeChange: (mode: FileListViewMode) => void
   onNavigate: (path: string) => void
@@ -316,11 +368,18 @@ type FileListProps = {
     path: string | null,
     options?: { replace?: boolean },
   ) => void
+  onManageAccess: (target: {
+    path: string
+    itemName: string
+    isDirectory: boolean
+  }) => void
 }
 
 export function FileList({
   connectionId,
   currentPath,
+  canWriteCurrentPath,
+  canManagePermissions,
   entries,
   viewMode,
   onViewModeChange,
@@ -330,14 +389,19 @@ export function FileList({
   selectedFileLoading,
   selectedFileError,
   onSelectedFilePathChange,
+  onManageAccess,
 }: FileListProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const renameNameId = useId()
-  const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null)
+  const [renameTarget, setRenameTarget] = useState<ExplorerFileEntry | null>(
+    null,
+  )
   const [renameValue, setRenameValue] = useState('')
   const [renameError, setRenameError] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<FileEntry | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ExplorerFileEntry | null>(
+    null,
+  )
   const [sortField, setSortField] = useState<ToolbarSortField>('name')
   const [sortAscending, setSortAscending] = useState(true)
 
@@ -389,7 +453,11 @@ export function FileList({
     }),
   )
 
-  function openRename(entry: FileEntry) {
+  function openRename(entry: ExplorerFileEntry) {
+    if (entry.access !== 'editor') {
+      return
+    }
+
     setRenameTarget(entry)
     setRenameValue(entry.name)
     setRenameError(null)
@@ -397,6 +465,11 @@ export function FileList({
 
   function submitRename() {
     if (!renameTarget) return
+    if (renameTarget.access !== 'editor') {
+      setRenameTarget(null)
+      return
+    }
+
     const trimmed = renameValue.trim()
     if (!trimmed) {
       setRenameError('Enter a name.')
@@ -430,23 +503,53 @@ export function FileList({
     window.location.assign(url)
   }
 
-  function rowForEntry(entry: FileEntry) {
+  function rowForEntry(entry: ExplorerFileEntry) {
+    const canWrite = entry.access === 'editor'
+
     const inner =
       viewMode === 'grid' ? (
         entry.isDirectory ? (
           <FolderCard
             entry={entry}
+            canWrite={canWrite}
+            canManagePermissions={canManagePermissions}
             onOpen={() => onNavigate(entry.path)}
+            onManageAccess={() =>
+              onManageAccess({
+                path: entry.path,
+                itemName: entry.name,
+                isDirectory: true,
+              })
+            }
             onRename={() => openRename(entry)}
-            onDelete={() => setDeleteTarget(entry)}
+            onDelete={() => {
+              if (!canWrite) {
+                return
+              }
+              setDeleteTarget(entry)
+            }}
           />
         ) : (
           <FileCard
             connectionId={connectionId}
             entry={entry}
+            canWrite={canWrite}
+            canManagePermissions={canManagePermissions}
             onOpen={() => onSelectedFilePathChange(entry.path)}
+            onManageAccess={() =>
+              onManageAccess({
+                path: entry.path,
+                itemName: entry.name,
+                isDirectory: false,
+              })
+            }
             onRename={() => openRename(entry)}
-            onDelete={() => setDeleteTarget(entry)}
+            onDelete={() => {
+              if (!canWrite) {
+                return
+              }
+              setDeleteTarget(entry)
+            }}
             onDownload={() => triggerDownload(entry)}
           />
         )
@@ -506,19 +609,37 @@ export function FileList({
             <Download className="size-4" />
             Download
           </ContextMenuItem>
-          <ContextMenuSeparator />
+          {canManagePermissions ? (
+            <ContextMenuItem
+              onSelect={() =>
+                onManageAccess({
+                  path: entry.path,
+                  itemName: entry.name,
+                  isDirectory: entry.isDirectory,
+                })
+              }
+            >
+              <Shield className="size-4" />
+              Manage access
+            </ContextMenuItem>
+          ) : null}
+          {canWrite ? (
+            <>
+              <ContextMenuSeparator />
 
-          <ContextMenuItem onSelect={() => openRename(entry)}>
-            <Pencil className="size-4" />
-            Rename
-          </ContextMenuItem>
-          <ContextMenuItem
-            variant="destructive"
-            onSelect={() => setDeleteTarget(entry)}
-          >
-            <Trash2 className="size-4" />
-            Delete
-          </ContextMenuItem>
+              <ContextMenuItem onSelect={() => openRename(entry)}>
+                <Pencil className="size-4" />
+                Rename
+              </ContextMenuItem>
+              <ContextMenuItem
+                variant="destructive"
+                onSelect={() => setDeleteTarget(entry)}
+              >
+                <Trash2 className="size-4" />
+                Delete
+              </ContextMenuItem>
+            </>
+          ) : null}
         </ContextMenuContent>
       </ContextMenu>
     )
@@ -578,7 +699,9 @@ export function FileList({
             This folder is empty
           </p>
           <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
-            Drop files here, or use New folder and Upload.
+            {canWriteCurrentPath
+              ? 'Drop files here, or use New folder and Upload.'
+              : 'No files are available here.'}
           </p>
         </div>
       ) : viewMode === 'grid' ? (
@@ -700,6 +823,10 @@ export function FileList({
               onClick={(ev) => {
                 ev.preventDefault()
                 if (!deleteTarget) return
+                if (deleteTarget.access !== 'editor') {
+                  setDeleteTarget(null)
+                  return
+                }
                 deleteMutation.mutate({
                   connectionId,
                   path: deleteTarget.path,
@@ -718,6 +845,7 @@ export function FileList({
         requestedPath={selectedFilePath ?? null}
         loading={selectedFileLoading}
         errorMessage={selectedFileError}
+        canManagePermissions={canManagePermissions}
         open={Boolean(selectedFilePath)}
         onOpenChange={(next) => {
           if (!next) {
@@ -725,6 +853,13 @@ export function FileList({
           }
         }}
         onDownload={triggerDownload}
+        onManageAccess={(target) => {
+          onManageAccess({
+            path: target.path,
+            itemName: target.itemName,
+            isDirectory: false,
+          })
+        }}
       />
     </div>
   )

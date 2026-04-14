@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { verifyFileAccess } from '#/lib/storage/auth-guard.ts'
+import { verifyFilePermission } from '#/lib/storage/auth-guard.ts'
 import { resolveProvider } from '#/lib/storage/index.ts'
 import { normalizePath, PathError } from '#/lib/storage/path-utils.ts'
 
@@ -8,7 +8,6 @@ export const Route = createFileRoute('/api/files/download')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { organizationId } = await verifyFileAccess(request)
         const url = new URL(request.url)
         const connectionId = url.searchParams.get('connectionId')
         const pathParam = url.searchParams.get('path') ?? '/'
@@ -26,6 +25,13 @@ export const Route = createFileRoute('/api/files/download')({
           }
           throw e
         }
+
+        const { organizationId } = await verifyFilePermission({
+          request,
+          connectionId,
+          path,
+          action: 'read',
+        })
 
         const provider = await resolveProvider(connectionId, organizationId)
 

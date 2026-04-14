@@ -25,6 +25,7 @@ import { cn } from '#/lib/utils'
 
 type ConnectionsGridProps = {
   connections: ConnectionListItem[]
+  canManageConnections: boolean
   isLoading: boolean
   isRefreshing?: boolean
   errorMessage?: string | null
@@ -79,6 +80,7 @@ function LoadingState() {
 
 export function ConnectionsGrid({
   connections,
+  canManageConnections,
   isLoading,
   isRefreshing = false,
   errorMessage,
@@ -116,29 +118,35 @@ export function ConnectionsGrid({
             No storage connections yet
           </h2>
           <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
-            Add a location to browse files.
+            {canManageConnections
+              ? 'Add a location to browse files.'
+              : 'No storage connections are available for this team yet.'}
           </p>
-          <Button
-            type="button"
-            className="mt-6 h-9 rounded-md px-4 font-medium"
-            onClick={onCreate}
-          >
-            <Plus className="mr-2 size-4" />
-            New
-          </Button>
+          {canManageConnections ? (
+            <Button
+              type="button"
+              className="mt-6 h-9 rounded-md px-4 font-medium"
+              onClick={onCreate}
+            >
+              <Plus className="mr-2 size-4" />
+              New
+            </Button>
+          ) : null}
         </div>
       ) : (
         <div className="flex w-full flex-col gap-6">
           <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b pt-1 pb-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="border-border text-foreground hover:bg-accent h-9 rounded-md bg-transparent px-3 font-normal"
-              onClick={onCreate}
-            >
-              <Plus className="text-primary mr-2 size-4" />
-              New
-            </Button>
+            {canManageConnections ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-border text-foreground hover:bg-accent h-9 rounded-md bg-transparent px-3 font-normal"
+                onClick={onCreate}
+              >
+                <Plus className="text-primary mr-2 size-4" />
+                New
+              </Button>
+            ) : null}
             <SortToolbar
               className="flex-1 border-0 pb-0"
               sortField={sortField}
@@ -147,10 +155,12 @@ export function ConnectionsGrid({
               onToggleSortDirection={() => setSortAscending((v) => !v)}
               allowedSortFields={['name', 'modified']}
               menuItems={
-                <DropdownMenuItem onClick={onCreate}>
-                  <Plus className="size-4" />
-                  New storage
-                </DropdownMenuItem>
+                canManageConnections ? (
+                  <DropdownMenuItem onClick={onCreate}>
+                    <Plus className="size-4" />
+                    New storage
+                  </DropdownMenuItem>
+                ) : undefined
               }
             />
           </div>
@@ -167,6 +177,7 @@ export function ConnectionsGrid({
               {sorted.map((connection) => (
                 <li key={connection.id} className="min-w-0">
                   <ConnectionTile
+                    canManageConnections={canManageConnections}
                     connection={connection}
                     onEdit={onEdit}
                     onDelete={onDelete}
@@ -182,10 +193,12 @@ export function ConnectionsGrid({
 }
 
 function ConnectionTile({
+  canManageConnections,
   connection,
   onEdit,
   onDelete,
 }: Pick<ConnectionsGridProps, 'onEdit' | 'onDelete'> & {
+  canManageConnections: boolean
   connection: ConnectionListItem
 }) {
   return (
@@ -215,44 +228,48 @@ function ConnectionTile({
           </span>
         </>
       </Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground/60 hover:text-foreground hover:bg-accent absolute top-2 right-2 size-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-            onClick={(event) => {
-              event.preventDefault()
-            }}
-          >
-            <MoreVertical className="size-4.5" />
-            <span className="sr-only">More actions for {connection.name}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-40">
-          <DropdownMenuItem
-            onClick={(event) => {
-              event.stopPropagation()
-              onEdit(connection)
-            }}
-          >
-            <PencilLine className="size-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={(event) => {
-              event.stopPropagation()
-              onDelete(connection)
-            }}
-          >
-            <Trash2 className="size-4" />
-            Remove
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {canManageConnections ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent absolute top-2 right-2 size-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              onClick={(event) => {
+                event.preventDefault()
+              }}
+            >
+              <MoreVertical className="size-4.5" />
+              <span className="sr-only">
+                More actions for {connection.name}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-40">
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation()
+                onEdit(connection)
+              }}
+            >
+              <PencilLine className="size-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(event) => {
+                event.stopPropagation()
+                onDelete(connection)
+              }}
+            >
+              <Trash2 className="size-4" />
+              Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </div>
   )
 }

@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { verifyFileAccess } from '#/lib/storage/auth-guard.ts'
+import {
+  verifyFileAccess,
+  verifyFilePermission,
+} from '#/lib/storage/auth-guard.ts'
 import { resolveProvider } from '#/lib/storage/index.ts'
 import { PathError } from '#/lib/storage/path-utils.ts'
 import {
@@ -63,6 +66,13 @@ export const Route = createFileRoute('/api/files/upload')({
           }
           throw e
         }
+
+        await verifyFilePermission({
+          request,
+          connectionId: connectionId.trim(),
+          path: requestedPath,
+          action: 'write',
+        })
 
         const provider = await resolveProvider(
           connectionId.trim(),

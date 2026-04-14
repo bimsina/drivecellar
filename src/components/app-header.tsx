@@ -1,10 +1,11 @@
-import { UserButton } from '@daveyplate/better-auth-ui'
+import { OrganizationSwitcher, UserButton } from '@daveyplate/better-auth-ui'
 import { Link } from '@tanstack/react-router'
-import { Building2, HardDrive } from 'lucide-react'
+import { Building2, ChevronsUpDown, HardDrive } from 'lucide-react'
 
 import { authClient } from '#/lib/auth-client'
 import { cn } from '#/lib/utils'
 
+import { Button } from './ui/button'
 import ThemeToggle from './ThemeToggle'
 
 type AppHeaderProps = {
@@ -14,13 +15,6 @@ type AppHeaderProps = {
 
 export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   const { data: session } = authClient.useSession()
-  const { data: organizations } = authClient.useListOrganizations()
-
-  const activeOrgId = session?.session.activeOrganizationId ?? null
-
-  const activeOrganization =
-    organizations?.find((organization) => organization.id === activeOrgId) ??
-    null
 
   const wide = variant === 'wide'
 
@@ -54,20 +48,62 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
         </Link>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">
-          {activeOrganization ? (
-            <div
-              className="text-muted-foreground hidden max-w-[min(100%,14rem)] min-w-0 items-center gap-1.5 text-sm sm:flex"
-              title={activeOrganization.name}
-            >
-              <Building2 className="text-primary size-4 shrink-0" aria-hidden />
-              <span className="truncate">{activeOrganization.name}</span>
-            </div>
-          ) : null}
+          {session?.user ? <HeaderOrganizationSwitcher /> : null}
 
           <ThemeToggle />
           <UserButton align="end" size="icon" />
         </div>
       </div>
     </header>
+  )
+}
+
+function HeaderOrganizationSwitcher() {
+  const { data: session } = authClient.useSession()
+  const { data: organizations } = authClient.useListOrganizations()
+
+  const activeOrgId = session?.session.activeOrganizationId ?? null
+  const activeOrganization =
+    organizations?.find((organization) => organization.id === activeOrgId) ??
+    null
+  const organizationLabel =
+    activeOrganization?.name ?? organizations?.[0]?.name ?? 'Select team'
+
+  if ((organizations?.length ?? 0) === 0) {
+    return null
+  }
+
+  return (
+    <OrganizationSwitcher
+      hidePersonal
+      size="sm"
+      sideOffset={8}
+      classNames={{
+        content: {
+          base: 'rounded-2xl border border-border bg-popover p-2 shadow-xl',
+          menuItem: 'rounded-xl',
+        },
+      }}
+      trigger={
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex max-w-[min(100%,15rem)] min-w-0 items-center gap-2 rounded-xl px-2.5 sm:px-3"
+          title={organizationLabel}
+          type="button"
+        >
+          <span className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <Building2 className="text-primary size-4" aria-hidden />
+          </span>
+          <span className="hidden min-w-0 flex-1 truncate text-left text-sm sm:block">
+            {organizationLabel}
+          </span>
+          <ChevronsUpDown
+            className="text-muted-foreground size-4 shrink-0"
+            aria-hidden
+          />
+        </Button>
+      }
+    />
   )
 }

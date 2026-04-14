@@ -1,6 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import type { ReactFormExtendedApi } from '@tanstack/react-form'
 import type { AnyFieldApi } from '@tanstack/form-core'
+import { Eye, FolderLock, HardDrive, PencilLine, ServerCog } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { z } from 'zod/v4'
@@ -19,19 +20,12 @@ import {
 import { FieldError } from '#/components/ui/field-error'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
 import { Switch } from '#/components/ui/switch'
-import { Textarea } from '#/components/ui/textarea'
 import {
   connectionMetadataSchema,
+  permissionAccessSchema,
   connectionTypeSchema,
   createConnectionInputSchema,
   updateConnectionInputSchema,
@@ -76,6 +70,7 @@ type ConnectionFormValues = {
   id: string
   name: string
   description: string
+  defaultAccess: 'editor' | 'viewer' | 'none'
   config: LocalFormConfig | S3FormConfig
 }
 
@@ -105,6 +100,7 @@ const connectionFormMetadataSchema = z.object({
   description: z
     .string()
     .max(500, 'Description must be 500 characters or fewer.'),
+  defaultAccess: permissionAccessSchema,
 })
 
 const createLocalFormConfigSchema = z.object({
@@ -215,6 +211,7 @@ function getDefaultFormValues(): ConnectionFormValues {
     id: '',
     name: '',
     description: '',
+    defaultAccess: 'editor',
     config: getDefaultLocalConfig(),
   }
 }
@@ -230,6 +227,7 @@ function getFormValuesFromConnection(
     id: connection.id,
     name: connection.name,
     description: connection.description ?? '',
+    defaultAccess: connection.defaultAccess,
     config: getConfigValuesForType(connection.config.type, connection),
   }
 }
@@ -244,6 +242,7 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
     return {
       name: values.name,
       description: values.description,
+      defaultAccess: values.defaultAccess,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -260,6 +259,7 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
   return {
     name: values.name,
     description: values.description,
+    defaultAccess: values.defaultAccess,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -273,6 +273,7 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
       id: values.id,
       name: values.name,
       description: values.description,
+      defaultAccess: values.defaultAccess,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -292,6 +293,7 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
     id: values.id,
     name: values.name,
     description: values.description,
+    defaultAccess: values.defaultAccess,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -329,6 +331,10 @@ function validateDescription({ value }: { value: string }) {
 
 function validateConnectionType({ value }: { value: string }) {
   return getSchemaError(connectionTypeSchema, value)
+}
+
+function validateDefaultAccess({ value }: { value: string }) {
+  return getSchemaError(permissionAccessSchema, value)
 }
 
 function validateBasePath({ value }: { value: string }) {
@@ -374,6 +380,49 @@ function validateSecretAccessKey({
 
   return getSchemaError(createS3FormConfigSchema.shape.secretAccessKey, value)
 }
+
+type OptionCard<TValue extends string> = {
+  value: TValue
+  title: string
+  description: string
+  icon: ReactNode
+}
+
+const connectionTypeOptions: OptionCard<'local' | 's3'>[] = [
+  {
+    value: 'local',
+    title: 'Local filesystem',
+    description: 'Use a folder mounted on this server.',
+    icon: <HardDrive className="size-4" />,
+  },
+  {
+    value: 's3',
+    title: 'S3-compatible',
+    description: 'Connect a bucket from AWS, MinIO, R2, and more.',
+    icon: <ServerCog className="size-4" />,
+  },
+]
+
+const defaultAccessOptions: OptionCard<'editor' | 'viewer' | 'none'>[] = [
+  {
+    value: 'editor',
+    title: 'Editor',
+    description: 'Members can upload, rename, and delete.',
+    icon: <PencilLine className="size-4" />,
+  },
+  {
+    value: 'viewer',
+    title: 'Viewer',
+    description: 'Members can browse and download only.',
+    icon: <Eye className="size-4" />,
+  },
+  {
+    value: 'none',
+    title: 'Private',
+    description: 'Require explicit access grants.',
+    icon: <FolderLock className="size-4" />,
+  },
+]
 
 function TextField({
   form,
@@ -446,7 +495,7 @@ function DescriptionField({ form }: { form: ConnectionFormApi }) {
       {(field) => (
         <div className="space-y-2">
           <Label htmlFor={field.name}>Description</Label>
-          <Textarea
+          <Input
             id={field.name}
             name={field.name}
             value={field.state.value}
@@ -459,6 +508,72 @@ function DescriptionField({ form }: { form: ConnectionFormApi }) {
         </div>
       )}
     </form.Field>
+  )
+}
+
+function OptionGridField<TValue extends string>({
+  label,
+  value,
+  onChange,
+  options,
+  hint,
+  error,
+  columns = 2,
+}: {
+  label: string
+  value: TValue
+  onChange: (value: TValue) => void
+  options: readonly OptionCard<TValue>[]
+  hint?: ReactNode
+  error?: readonly unknown[]
+  columns?: 2 | 3
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div
+        className={cn(
+          'grid gap-3',
+          columns === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2',
+        )}
+      >
+        {options.map((option) => {
+          const selected = option.value === value
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'border-border/70 bg-background/70 hover:border-border hover:bg-accent/40 flex min-h-24 w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors',
+                selected &&
+                  'border-primary/60 bg-primary/8 ring-primary/20 ring-2',
+              )}
+            >
+              <div
+                className={cn(
+                  'bg-muted text-muted-foreground mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                  selected &&
+                    'bg-primary text-primary-foreground border-primary/70',
+                )}
+              >
+                {option.icon}
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="font-medium">{option.title}</div>
+                <p className="text-muted-foreground text-sm leading-snug">
+                  {option.description}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      {hint}
+      <FieldError errors={getFieldErrors(error)} />
+    </div>
   )
 }
 
@@ -480,32 +595,49 @@ function ConnectionTypeField({
       }}
     >
       {(field) => (
-        <div className="space-y-2">
-          <Label htmlFor={field.name}>Drive type</Label>
-          <Select
-            value={field.state.value}
-            onValueChange={(value: 's3' | 'local') => {
-              onTypeChange()
-              form.setFieldValue(
-                'config',
-                getConfigValuesForType(value, connection),
-              )
-            }}
-          >
-            <SelectTrigger
-              id={field.name}
-              className="w-full"
-              aria-invalid={field.state.meta.errors.length > 0}
-            >
-              <SelectValue placeholder="Choose a storage type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="local">Local filesystem</SelectItem>
-              <SelectItem value="s3">S3-compatible</SelectItem>
-            </SelectContent>
-          </Select>
-          <FieldError errors={getFieldErrors(field.state.meta.errors)} />
-        </div>
+        <OptionGridField
+          label="Drive type"
+          value={field.state.value}
+          error={field.state.meta.errors}
+          options={connectionTypeOptions}
+          onChange={(value) => {
+            field.handleChange(value)
+            onTypeChange()
+            form.setFieldValue(
+              'config',
+              getConfigValuesForType(value, connection),
+            )
+          }}
+        />
+      )}
+    </form.Field>
+  )
+}
+
+function DefaultAccessField({ form }: { form: ConnectionFormApi }) {
+  return (
+    <form.Field
+      name="defaultAccess"
+      validators={{
+        onChange: validateDefaultAccess,
+        onSubmit: validateDefaultAccess,
+      }}
+    >
+      {(field) => (
+        <OptionGridField
+          label="Default member access"
+          value={field.state.value}
+          error={field.state.meta.errors}
+          options={defaultAccessOptions}
+          columns={3}
+          onChange={(value) => field.handleChange(value)}
+          hint={
+            <p className="text-muted-foreground text-xs">
+              Editors can upload, rename, and delete. Viewers can browse and
+              download. Private drives require explicit grants.
+            </p>
+          }
+        />
       )}
     </form.Field>
   )
@@ -740,16 +872,20 @@ export function ConnectionFormDialog({
                 placeholder="Archive storage"
                 validate={validateConnectionName}
                 autoFocus
-                className="space-y-2 md:col-span-2"
               />
               <DescriptionField form={form} />
-              <ConnectionTypeField
-                form={form}
-                connection={connection}
-                onTypeChange={() => {
-                  setSubmitAlert(null)
-                }}
-              />
+              <div className="md:col-span-2">
+                <ConnectionTypeField
+                  form={form}
+                  connection={connection}
+                  onTypeChange={() => {
+                    setSubmitAlert(null)
+                  }}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <DefaultAccessField form={form} />
+              </div>
             </section>
           ) : (
             <form.Subscribe selector={(state) => state.values.config}>

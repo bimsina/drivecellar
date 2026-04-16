@@ -182,6 +182,45 @@ export async function getPermissionContext(
   }
 }
 
+/** Normalized folder paths where the user has a non-none folder grant (for descendant visibility). */
+export function getExplorerGrantedFolderPaths(
+  context: PermissionContext,
+): string[] {
+  return context.folderAccesses
+    .filter((entry) => entry.access !== 'none')
+    .map((entry) => normalizePath(entry.path))
+}
+
+/**
+ * Whether an indexed file/folder row should appear in the explorer or global search for this context.
+ * Matches the visibility rules used by `files.list` (read access, or directory with descendant grants).
+ */
+export function isExplorerIndexedEntryVisible(
+  context: PermissionContext,
+  grantedFolderPaths: string[],
+  entry: {
+    path: string
+    isDirectory: boolean
+    access: PermissionAccess
+  },
+): boolean {
+  if (canRead(entry.access)) {
+    return true
+  }
+
+  if (!entry.isDirectory) {
+    return false
+  }
+
+  const normalizedPath = normalizePath(entry.path)
+
+  return grantedFolderPaths.some(
+    (grantedPath) =>
+      grantedPath.startsWith(`${normalizedPath}/`) ||
+      grantedPath === normalizedPath,
+  )
+}
+
 export function resolvePermissionFromContext(
   path: string,
   context: PermissionContext,

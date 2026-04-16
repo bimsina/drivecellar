@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from '#/components/ui/alert-dialog'
 import { Button } from '#/components/ui/button'
+import { ColorPicker } from '#/components/ui/color-picker'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -52,6 +53,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { DynamicIcon } from '#/components/ui/dynamic-icon'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,16 +62,20 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { FieldError } from '#/components/ui/field-error'
+import { IconPicker } from '#/components/ui/icon-picker'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
+import { TagBadges } from '#/components/tags/tag-badges'
+import { TagManager } from '#/components/tags/tag-manager'
 import { useTRPC } from '#/integrations/trpc/react'
 import type { PermissionAccess } from '#/lib/connections'
+import { getPaletteIconBadgeStyle } from '#/lib/color-palette.ts'
 import type { FileEntry } from '#/lib/storage/types'
 import { normalizePath, PathError } from '#/lib/storage/path-utils'
+import type { TagListItem } from '#/lib/tags.ts'
 import { cn } from '#/lib/utils'
 
-import { FileDetailDialog } from './file-detail-dialog'
 import { buildDownloadUrl, isImageEntry } from './preview-utils'
 
 const LIST_VIRTUAL_ROW_HEIGHT = 64
@@ -152,19 +158,25 @@ function sortEntries<TEntry extends FileEntry>(
 }
 
 function FolderCard({
+  connectionId,
   entry,
+  tags,
   canWrite,
   canManagePermissions,
   onOpen,
   onManageAccess,
+  onCustomize,
   onRename,
   onDelete,
 }: {
+  connectionId: string
   entry: ExplorerFileEntry
+  tags: TagListItem[]
   canWrite: boolean
   canManagePermissions: boolean
   onOpen: () => void
   onManageAccess: () => void
+  onCustomize: () => void
   onRename: () => void
   onDelete: () => void
 }) {
@@ -178,10 +190,24 @@ function FolderCard({
         onClick={onOpen}
         className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
       >
-        <span className="bg-primary/10 flex shrink-0 items-center justify-center rounded-lg p-1.5">
-          <FolderIcon className="text-primary size-4" strokeWidth={2} />
+        <span
+          className={cn(
+            'bg-primary/10 text-primary border-primary/20 flex shrink-0 items-center justify-center rounded-lg border p-1.5',
+          )}
+          style={getPaletteIconBadgeStyle(entry.color)}
+        >
+          <DynamicIcon
+            value={entry.icon}
+            fallback={<FolderIcon className="size-4" strokeWidth={2} />}
+            className="size-4"
+          />
         </span>
-        <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+        <span className="min-w-0 flex-1 truncate">
+          {entry.name}
+          <span className="ml-2 inline-flex align-middle">
+            <TagBadges tags={tags} />
+          </span>
+        </span>
       </button>
       {canWrite ? (
         <DropdownMenu>
@@ -196,7 +222,7 @@ function FolderCard({
                 event.stopPropagation()
               }}
             >
-              <MoreVertical className="size-[1.125rem]" />
+              <MoreVertical className="size-4.5" />
               <span className="sr-only">More actions for {entry.name}</span>
             </Button>
           </DropdownMenuTrigger>
@@ -212,9 +238,32 @@ function FolderCard({
                 Manage access
               </DropdownMenuItem>
             ) : null}
+            <TagManager
+              connectionId={connectionId}
+              path={entry.path}
+              currentTagIds={tags.map((tag) => tag.id)}
+              trigger={
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }}
+                >
+                  Tags
+                </DropdownMenuItem>
+              }
+            />
             {canWrite ? (
               <>
                 {canManagePermissions ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCustomize()
+                  }}
+                >
+                  Customize
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation()
@@ -247,6 +296,7 @@ function FolderCard({
 function FileCard({
   connectionId,
   entry,
+  tags,
   canWrite,
   canManagePermissions,
   onOpen,
@@ -257,6 +307,7 @@ function FileCard({
 }: {
   connectionId: string
   entry: ExplorerFileEntry
+  tags: TagListItem[]
   canWrite: boolean
   canManagePermissions: boolean
   onOpen: () => void
@@ -275,13 +326,16 @@ function FileCard({
       className="group border-border/50 bg-card/90 hover:bg-muted/60 flex flex-col overflow-hidden rounded-xl border transition-colors duration-150"
     >
       <div className="border-border/30 flex items-center gap-2 border-b px-3 py-2">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="text-foreground focus-visible:ring-ring min-w-0 flex-1 cursor-pointer truncate text-left text-xs font-medium outline-none focus-visible:ring-2"
-        >
-          {entry.name}
-        </button>
+        <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onOpen}
+            className="text-foreground focus-visible:ring-ring min-w-0 cursor-pointer truncate text-left text-xs font-medium outline-none focus-visible:ring-2"
+          >
+            {entry.name}
+          </button>
+          <TagBadges tags={tags} size="sm" maxVisible={2} />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -298,7 +352,7 @@ function FileCard({
               <span className="sr-only">More actions for {entry.name}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[10rem]">
+          <DropdownMenuContent align="end" className="min-w-40">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation()
@@ -319,6 +373,21 @@ function FileCard({
                 Manage access
               </DropdownMenuItem>
             ) : null}
+            <TagManager
+              connectionId={connectionId}
+              path={entry.path}
+              currentTagIds={tags.map((tag) => tag.id)}
+              trigger={
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }}
+                >
+                  Tags
+                </DropdownMenuItem>
+              }
+            />
             {canWrite ? (
               <>
                 <DropdownMenuItem
@@ -349,13 +418,13 @@ function FileCard({
       <button
         type="button"
         onClick={onOpen}
-        className="bg-muted/30 hover:bg-muted/50 focus-visible:ring-ring flex min-h-[6.5rem] flex-1 cursor-pointer items-center justify-center p-3 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="bg-muted/30 hover:bg-muted/50 focus-visible:ring-ring flex min-h-26 flex-1 cursor-pointer items-center justify-center p-3 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {showImage ? (
           <img
             src={src}
             alt=""
-            className="max-h-[6rem] w-full max-w-full object-contain"
+            className="max-h-24 w-full max-w-full object-contain"
             loading="lazy"
           />
         ) : (
@@ -374,6 +443,8 @@ function FileCard({
 export type FileListViewMode = 'grid' | 'list'
 export type ExplorerFileEntry = FileEntry & {
   access: PermissionAccess
+  color: string | null
+  icon: string | null
 }
 
 type FileListProps = {
@@ -389,19 +460,13 @@ type FileListProps = {
   viewMode: FileListViewMode
   onViewModeChange: (mode: FileListViewMode) => void
   onNavigate: (path: string) => void
-  selectedFilePath?: string
-  selectedFileEntry: FileEntry | null
-  selectedFileLoading: boolean
-  selectedFileError: string | null
-  onSelectedFilePathChange: (
-    path: string | null,
-    options?: { replace?: boolean },
-  ) => void
+  onOpenFile: (filePath: string) => void
   onManageAccess: (target: {
     path: string
     itemName: string
     isDirectory: boolean
   }) => void
+  tagsByPath: Record<string, TagListItem[]>
 }
 
 export function FileList({
@@ -417,12 +482,9 @@ export function FileList({
   viewMode,
   onViewModeChange,
   onNavigate,
-  selectedFilePath,
-  selectedFileEntry,
-  selectedFileLoading,
-  selectedFileError,
-  onSelectedFilePathChange,
+  onOpenFile,
   onManageAccess,
+  tagsByPath,
 }: FileListProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -435,6 +497,9 @@ export function FileList({
   const [deleteTarget, setDeleteTarget] = useState<ExplorerFileEntry | null>(
     null,
   )
+  const [metaTarget, setMetaTarget] = useState<ExplorerFileEntry | null>(null)
+  const [metaColor, setMetaColor] = useState<string | null>(null)
+  const [metaIcon, setMetaIcon] = useState<string | null>(null)
   const [sortField, setSortField] = useState<ToolbarSortField>('name')
   const [sortAscending, setSortAscending] = useState(true)
 
@@ -485,6 +550,20 @@ export function FileList({
       },
     }),
   )
+  const updateMetaMutation = useMutation(
+    trpc.files.updateMeta.mutationOptions({
+      onSuccess: async () => {
+        await invalidateList()
+        toast.success('Updated.')
+        setMetaTarget(null)
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof Error ? error.message : 'Could not update.',
+        )
+      },
+    }),
+  )
 
   function openRename(entry: ExplorerFileEntry) {
     if (entry.access !== 'editor') {
@@ -494,6 +573,28 @@ export function FileList({
     setRenameTarget(entry)
     setRenameValue(entry.name)
     setRenameError(null)
+  }
+
+  function openCustomize(entry: ExplorerFileEntry) {
+    if (entry.access !== 'editor') {
+      return
+    }
+    setMetaTarget(entry)
+    setMetaColor(entry.color)
+    setMetaIcon(entry.icon)
+  }
+
+  function submitCustomize() {
+    if (!metaTarget) {
+      return
+    }
+
+    updateMetaMutation.mutate({
+      connectionId,
+      path: metaTarget.path,
+      color: metaColor,
+      icon: metaIcon,
+    })
   }
 
   function submitRename() {
@@ -538,12 +639,15 @@ export function FileList({
 
   function rowForEntry(entry: ExplorerFileEntry) {
     const canWrite = entry.access === 'editor'
+    const tags = tagsByPath[entry.path] ?? []
 
     const inner =
       viewMode === 'grid' ? (
         entry.isDirectory ? (
           <FolderCard
+            connectionId={connectionId}
             entry={entry}
+            tags={tags}
             canWrite={canWrite}
             canManagePermissions={canManagePermissions}
             onOpen={() => onNavigate(entry.path)}
@@ -554,6 +658,7 @@ export function FileList({
                 isDirectory: true,
               })
             }
+            onCustomize={() => openCustomize(entry)}
             onRename={() => openRename(entry)}
             onDelete={() => {
               if (!canWrite) {
@@ -566,9 +671,10 @@ export function FileList({
           <FileCard
             connectionId={connectionId}
             entry={entry}
+            tags={tags}
             canWrite={canWrite}
             canManagePermissions={canManagePermissions}
-            onOpen={() => onSelectedFilePathChange(entry.path)}
+            onOpen={() => onOpenFile(entry.path)}
             onManageAccess={() =>
               onManageAccess({
                 path: entry.path,
@@ -593,7 +699,7 @@ export function FileList({
             if (entry.isDirectory) {
               onNavigate(entry.path)
             } else {
-              onSelectedFilePathChange(entry.path)
+              onOpenFile(entry.path)
             }
           }}
         >
@@ -614,6 +720,7 @@ export function FileList({
               <span className="text-foreground block truncate text-sm font-medium">
                 {entry.name}
               </span>
+              <TagBadges tags={tags} size="sm" maxVisible={1} />
               <span className="text-muted-foreground block text-xs font-normal">
                 {entry.isDirectory
                   ? 'Folder'
@@ -654,9 +761,28 @@ export function FileList({
               Manage access
             </ContextMenuItem>
           ) : null}
+          <TagManager
+            connectionId={connectionId}
+            path={entry.path}
+            currentTagIds={tags.map((tag) => tag.id)}
+            trigger={
+              <ContextMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                }}
+              >
+                Tags
+              </ContextMenuItem>
+            }
+          />
           {canWrite ? (
             <>
               <ContextMenuSeparator />
+              {entry.isDirectory ? (
+                <ContextMenuItem onSelect={() => openCustomize(entry)}>
+                  Customize
+                </ContextMenuItem>
+              ) : null}
 
               <ContextMenuItem onSelect={() => openRename(entry)}>
                 <Pencil className="size-4" />
@@ -1123,28 +1249,49 @@ export function FileList({
         </AlertDialogContent>
       </AlertDialog>
 
-      <FileDetailDialog
-        connectionId={connectionId}
-        entry={selectedFileEntry}
-        requestedPath={selectedFilePath ?? null}
-        loading={selectedFileLoading}
-        errorMessage={selectedFileError}
-        canManagePermissions={canManagePermissions}
-        open={Boolean(selectedFilePath)}
-        onOpenChange={(next) => {
-          if (!next) {
-            onSelectedFilePathChange(null, { replace: true })
+      <Dialog
+        open={Boolean(metaTarget)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setMetaTarget(null)
           }
         }}
-        onDownload={triggerDownload}
-        onManageAccess={(target) => {
-          onManageAccess({
-            path: target.path,
-            itemName: target.itemName,
-            isDirectory: false,
-          })
-        }}
-      />
+      >
+        <DialogContent className="border-border bg-card border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customize folder</DialogTitle>
+            <DialogDescription>
+              Set a color and icon for this folder.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <ColorPicker value={metaColor} onChange={setMetaColor} />
+            </div>
+            <div className="space-y-2">
+              <Label>Icon</Label>
+              <IconPicker value={metaIcon} onChange={setMetaIcon} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setMetaTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={submitCustomize}
+              disabled={updateMetaMutation.isPending}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

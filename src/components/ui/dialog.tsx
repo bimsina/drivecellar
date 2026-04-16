@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 
@@ -51,29 +49,17 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  fullscreen = false,
-  overlayClassName,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
-  /** Full viewport panel (e.g. file preview). Overlay matches app background. */
-  fullscreen?: boolean
-  overlayClassName?: string
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay
-        className={cn(
-          fullscreen && 'bg-background backdrop-blur-none',
-          overlayClassName,
-        )}
-      />
+      <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          fullscreen
-            ? 'bg-background text-foreground data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 z-50 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none ring-0 duration-200 outline-none sm:max-w-none'
-            : 'bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm ring-1 duration-100 outline-none sm:max-w-sm',
+          'bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm ring-1 duration-100 outline-none sm:max-w-sm',
           className,
         )}
         {...props}
@@ -83,13 +69,10 @@ function DialogContent({
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button
               variant="ghost"
-              className={cn(
-                'absolute z-[60]',
-                fullscreen ? 'top-3 right-3' : 'top-2 right-2',
-              )}
-              size={fullscreen ? 'icon-lg' : 'icon-sm'}
+              className="absolute top-2 right-2"
+              size="icon-sm"
             >
-              <XIcon className={fullscreen ? 'size-5' : undefined} />
+              <XIcon />
               <span className="sr-only">Close</span>
             </Button>
           </DialogPrimitive.Close>

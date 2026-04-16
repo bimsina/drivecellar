@@ -202,6 +202,8 @@ export const connectionsRouter = createTRPCRouter({
         defaultAccess: input.defaultAccess,
         organizationId: ctx.organizationId,
         config: serializeConnectionConfig(input.config),
+        color: input.color ?? null,
+        icon: input.icon ?? null,
         createdBy: ctx.sessionData.user.id,
       })
 
@@ -252,6 +254,8 @@ export const connectionsRouter = createTRPCRouter({
           type: mergedConfig.type,
           defaultAccess: input.defaultAccess,
           config: serializedConfig,
+          color: input.color ?? null,
+          icon: input.icon ?? null,
         },
       )
 

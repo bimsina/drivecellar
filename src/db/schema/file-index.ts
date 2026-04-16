@@ -23,6 +23,8 @@ export const fileIndex = sqliteTable(
     isDirectory: integer('is_directory', { mode: 'boolean' }).notNull(),
     size: integer('size'),
     mimeType: text('mime_type'),
+    color: text('color'),
+    icon: text('icon'),
     lastModified: integer('last_modified', { mode: 'timestamp_ms' }),
     indexedAt: integer('indexed_at', { mode: 'timestamp_ms' }).notNull(),
   },

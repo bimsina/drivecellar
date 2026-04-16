@@ -32,6 +32,8 @@ export async function listFromIndexBatch({
       isDirectory: fileIndex.isDirectory,
       size: fileIndex.size,
       mimeType: fileIndex.mimeType,
+      color: fileIndex.color,
+      icon: fileIndex.icon,
       lastModified: fileIndex.lastModified,
     })
     .from(fileIndex)

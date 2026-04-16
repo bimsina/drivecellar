@@ -1,4 +1,5 @@
 import { z } from 'zod/v4'
+import { colorKeySchema, iconValueSchema } from './tags.ts'
 
 const trimmedString = z.string().trim()
 const optionalTrimmedString = z.string().trim().optional()
@@ -37,6 +38,8 @@ export const connectionConfigSchema = z.discriminatedUnion('type', [
 export const createConnectionInputSchema = connectionMetadataSchema.extend({
   config: connectionConfigSchema,
   defaultAccess: permissionAccessSchema,
+  color: colorKeySchema.nullable().optional(),
+  icon: iconValueSchema.nullable().optional(),
 })
 
 export const updateS3ConfigSchema = s3ConfigSchema.extend({
@@ -52,6 +55,8 @@ export const updateConnectionInputSchema = connectionMetadataSchema.extend({
   id: z.string().min(1),
   config: updateConnectionConfigSchema,
   defaultAccess: permissionAccessSchema,
+  color: colorKeySchema.nullable().optional(),
+  icon: iconValueSchema.nullable().optional(),
 })
 
 export const deleteConnectionInputSchema = z.object({
@@ -83,6 +88,8 @@ export const connectionListItemSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   config: clientConnectionConfigSchema,
+  color: z.string().nullable(),
+  icon: z.string().nullable(),
 })
 
 export const getConnectionInputSchema = z.object({

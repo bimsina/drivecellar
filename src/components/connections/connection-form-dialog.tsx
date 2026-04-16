@@ -9,6 +9,7 @@ import { z } from 'zod/v4'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { ColorPicker } from '#/components/ui/color-picker'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
 } from '#/components/ui/dialog'
 import { FieldError } from '#/components/ui/field-error'
 import { Input } from '#/components/ui/input'
+import { IconPicker } from '#/components/ui/icon-picker'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
@@ -30,6 +32,7 @@ import {
   createConnectionInputSchema,
   updateConnectionInputSchema,
 } from '#/lib/connections.ts'
+import { colorKeySchema, iconValueSchema } from '#/lib/tags.ts'
 import type {
   ConnectionConfig,
   CreateConnectionInput,
@@ -71,6 +74,8 @@ type ConnectionFormValues = {
   name: string
   description: string
   defaultAccess: 'editor' | 'viewer' | 'none'
+  color: string | null
+  icon: string | null
   config: LocalFormConfig | S3FormConfig
 }
 
@@ -101,6 +106,8 @@ const connectionFormMetadataSchema = z.object({
     .string()
     .max(500, 'Description must be 500 characters or fewer.'),
   defaultAccess: permissionAccessSchema,
+  color: colorKeySchema.nullable(),
+  icon: iconValueSchema.nullable(),
 })
 
 const createLocalFormConfigSchema = z.object({
@@ -212,6 +219,8 @@ function getDefaultFormValues(): ConnectionFormValues {
     name: '',
     description: '',
     defaultAccess: 'editor',
+    color: null,
+    icon: null,
     config: getDefaultLocalConfig(),
   }
 }
@@ -228,6 +237,8 @@ function getFormValuesFromConnection(
     name: connection.name,
     description: connection.description ?? '',
     defaultAccess: connection.defaultAccess,
+    color: connection.color,
+    icon: connection.icon,
     config: getConfigValuesForType(connection.config.type, connection),
   }
 }
@@ -243,6 +254,8 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
       name: values.name,
       description: values.description,
       defaultAccess: values.defaultAccess,
+      color: values.color,
+      icon: values.icon,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -260,6 +273,8 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
     name: values.name,
     description: values.description,
     defaultAccess: values.defaultAccess,
+    color: values.color,
+    icon: values.icon,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -274,6 +289,8 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
       name: values.name,
       description: values.description,
       defaultAccess: values.defaultAccess,
+      color: values.color,
+      icon: values.icon,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -294,6 +311,8 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
     name: values.name,
     description: values.description,
     defaultAccess: values.defaultAccess,
+    color: values.color,
+    icon: values.icon,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -874,6 +893,28 @@ export function ConnectionFormDialog({
                 autoFocus
               />
               <DescriptionField form={form} />
+              <div className="space-y-2 md:col-span-2">
+                <Label>Color</Label>
+                <form.Field name="color">
+                  {(field) => (
+                    <ColorPicker
+                      value={field.state.value}
+                      onChange={(next) => field.handleChange(next)}
+                    />
+                  )}
+                </form.Field>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Icon</Label>
+                <form.Field name="icon">
+                  {(field) => (
+                    <IconPicker
+                      value={field.state.value}
+                      onChange={(next) => field.handleChange(next)}
+                    />
+                  )}
+                </form.Field>
+              </div>
               <div className="md:col-span-2">
                 <ConnectionTypeField
                   form={form}

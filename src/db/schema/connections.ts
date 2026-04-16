@@ -14,6 +14,8 @@ export const connections = sqliteTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
     config: text('config').notNull(), // JSON — validated by Zod at app layer
+    color: text('color'),
+    icon: text('icon'),
     createdBy: text('created_by')
       .notNull()
       .references(() => users.id),

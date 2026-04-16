@@ -17,6 +17,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { useTRPC } from '#/integrations/trpc/react'
 import type { FileEntry } from '#/lib/storage/types'
 import { normalizePath } from '#/lib/storage/path-utils'
+import type { TagListItem } from '#/lib/tags.ts'
 
 import { ExplorerBreadcrumb } from './breadcrumb-nav'
 import { CreateFolderDialog } from './create-folder-dialog'
@@ -39,11 +40,7 @@ type FileExplorerProps = {
   connectionName: string
   path: string
   onPathChange: (path: string) => void
-  selectedFilePath?: string
-  onSelectedFilePathChange: (
-    path: string | null,
-    options?: { replace?: boolean },
-  ) => void
+  onOpenFile: (filePath: string) => void
 }
 
 type UploadApiResponse = {
@@ -133,8 +130,7 @@ export function FileExplorer({
   connectionName,
   path,
   onPathChange,
-  selectedFilePath,
-  onSelectedFilePathChange,
+  onOpenFile,
 }: FileExplorerProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -174,15 +170,6 @@ export function FileExplorer({
   } | null>(null)
   const [hasMoreEntries, setHasMoreEntries] = useState(false)
   const [isLoadingMoreEntries, setIsLoadingMoreEntries] = useState(false)
-  const fileDetailQuery = useQuery(
-    trpc.files.stat.queryOptions(
-      {
-        connectionId,
-        path: selectedFilePath ?? '/',
-      },
-      { enabled: Boolean(connectionId) && Boolean(selectedFilePath) },
-    ),
-  )
   const myAccessQuery = useQuery(
     trpc.permissions.getMyAccess.queryOptions(
       {
@@ -198,6 +185,18 @@ export function FileExplorer({
     () => listPages.flatMap((page) => page.entries),
     [listPages],
   )
+  const tagsForFilesQuery = useQuery(
+    trpc.tags.listForFiles.queryOptions(
+      {
+        connectionId,
+        paths: entries.map((entry) => entry.path),
+      },
+      {
+        enabled: Boolean(connectionId) && entries.length > 0,
+      },
+    ),
+  )
+  const tagsByPath: Record<string, TagListItem[]> = tagsForFilesQuery.data ?? {}
   const canWriteCurrentPath = myAccessQuery.data?.access === 'editor'
   const canManagePermissions =
     myAccessQuery.data?.organizationRole === 'owner' ||
@@ -411,16 +410,6 @@ export function FileExplorer({
   }, [connectionId, queryClient, trpc, uploads])
 
   useEffect(() => {
-    if (fileDetailQuery.data?.isDirectory && selectedFilePath) {
-      onSelectedFilePathChange(null, { replace: true })
-    }
-  }, [
-    fileDetailQuery.data?.isDirectory,
-    onSelectedFilePathChange,
-    selectedFilePath,
-  ])
-
-  useEffect(() => {
     if (canWriteCurrentPath) {
       return
     }
@@ -577,21 +566,9 @@ export function FileExplorer({
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   onNavigate={onPathChange}
-                  selectedFilePath={selectedFilePath}
-                  selectedFileEntry={
-                    fileDetailQuery.data && !fileDetailQuery.data.isDirectory
-                      ? fileDetailQuery.data
-                      : null
-                  }
-                  selectedFileLoading={fileDetailQuery.isPending}
-                  selectedFileError={
-                    fileDetailQuery.isError
-                      ? (fileDetailQuery.error?.message ??
-                        'Could not load file.')
-                      : null
-                  }
-                  onSelectedFilePathChange={onSelectedFilePathChange}
+                  onOpenFile={onOpenFile}
                   onManageAccess={setManageAccessTarget}
+                  tagsByPath={tagsByPath}
                 />
               )}
 

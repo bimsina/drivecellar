@@ -4,6 +4,7 @@ import { filesRouter } from './routers/files'
 import { indexingRouter } from './routers/indexing'
 import { permissionsRouter } from './routers/permissions'
 import { sharedLinksRouter } from './routers/shared-links'
+import { tagsRouter } from './routers/tags'
 
 export const trpcRouter = createTRPCRouter({
   connections: connectionsRouter,
@@ -11,5 +12,6 @@ export const trpcRouter = createTRPCRouter({
   indexing: indexingRouter,
   permissions: permissionsRouter,
   sharedLinks: sharedLinksRouter,
+  tags: tagsRouter,
 })
 export type TRPCRouter = typeof trpcRouter

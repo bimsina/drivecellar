@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { SortToolbar, type ToolbarSortField } from '#/components/sort-toolbar'
+import { DynamicIcon } from '#/components/ui/dynamic-icon'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Button } from '#/components/ui/button'
 import {
@@ -22,6 +23,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Skeleton } from '#/components/ui/skeleton'
 import type { ConnectionListItem } from '#/lib/connections.ts'
+import { getPaletteIconBadgeStyle } from '#/lib/color-palette.ts'
 import { cn } from '#/lib/utils'
 
 type ConnectionsGridProps = {
@@ -211,15 +213,26 @@ function ConnectionTile({
       <Link
         to="/c/$id"
         params={{ id: connection.id }}
-        search={{ file: '/' }}
         className={cn(
           'flex min-h-40 flex-col items-center gap-3 rounded-2xl px-4 py-5 text-center transition-colors duration-150',
           'text-foreground hover:bg-muted/60 focus-visible:ring-ring outline-none focus-visible:ring-2',
         )}
       >
         <>
-          <span className="bg-primary/10 text-primary flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl">
-            <HardDrive className="size-12" strokeWidth={1.5} aria-hidden />
+          <span
+            className={cn(
+              'bg-primary/10 text-primary border-primary/20 flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl border',
+            )}
+            style={getPaletteIconBadgeStyle(connection.color)}
+          >
+            <DynamicIcon
+              value={connection.icon}
+              fallback={
+                <HardDrive className="size-12" strokeWidth={1.5} aria-hidden />
+              }
+              className="size-12"
+              size={48}
+            />
           </span>
           <span className="w-full min-w-0 px-1">
             <span className="line-clamp-2 text-sm leading-snug font-medium">

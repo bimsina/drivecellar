@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
 import { AppLoading } from '#/components/app-loading'
 import { AppShell } from '#/components/app-shell'
 import { FileExplorer } from '#/components/file-explorer/file-explorer'
 import { useTRPC } from '#/integrations/trpc/react'
-import { getExplorerRouteTarget } from '#/lib/explorer-route'
+import {
+  getExplorerFileDetailRouteTarget,
+  getExplorerRouteTarget,
+} from '#/lib/explorer-route'
 
 type ExplorerPageProps = {
   connectionId: string
@@ -14,7 +17,6 @@ type ExplorerPageProps = {
 
 export function ExplorerPage({ connectionId, path }: ExplorerPageProps) {
   const navigate = useNavigate()
-  const { file } = useSearch({ from: '/c/$id' })
   const trpc = useTRPC()
 
   const connectionQuery = useQuery(
@@ -27,22 +29,13 @@ export function ExplorerPage({ connectionId, path }: ExplorerPageProps) {
   function handlePathChange(nextPath: string) {
     void navigate({
       ...getExplorerRouteTarget(connectionId, nextPath),
-      search: (prev) => ({ ...prev, file: undefined }),
       replace: true,
     })
   }
 
-  function handleSelectedFilePathChange(
-    nextFilePath: string | null,
-    options?: { replace?: boolean },
-  ) {
+  function handleOpenFile(filePath: string) {
     void navigate({
-      ...getExplorerRouteTarget(connectionId, path),
-      search: (prev) => ({
-        ...prev,
-        file: nextFilePath ?? undefined,
-      }),
-      replace: options?.replace ?? false,
+      ...getExplorerFileDetailRouteTarget(connectionId, filePath),
     })
   }
 
@@ -61,8 +54,7 @@ export function ExplorerPage({ connectionId, path }: ExplorerPageProps) {
             connectionName={connectionQuery.data.name}
             path={path}
             onPathChange={handlePathChange}
-            selectedFilePath={file}
-            onSelectedFilePathChange={handleSelectedFilePathChange}
+            onOpenFile={handleOpenFile}
           />
         )}
       </main>

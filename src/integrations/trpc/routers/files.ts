@@ -1,17 +1,37 @@
 import { TRPCError } from '@trpc/server'
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  gt,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { z } from 'zod/v4'
 
+import { db } from '#/db/index.ts'
+import { connections, fileIndex, fileTags } from '#/db/schema/index.ts'
+import {
+  listConnectionsForOrganization,
+  listVisibleConnectionsForUser,
+} from '#/lib/connection-repository.ts'
 import {
   canRead,
   canWrite,
   deleteScopedPermissions,
+  getExplorerGrantedFolderPaths,
   getPermissionContext,
+  isExplorerIndexedEntryVisible,
   isOrganizationAdminRole,
   renameScopedPermissions,
   resolvePermissionFromContext,
   resolvePermission,
 } from '#/lib/permissions.ts'
 import { permissionAccessSchema } from '#/lib/connections.ts'
+import { colorKeySchema, iconValueSchema } from '#/lib/tags.ts'
 import {
   indexDeleteEntry,
   indexInsertEntry,
@@ -29,6 +49,8 @@ const fileEntrySchema = z.object({
   isDirectory: z.boolean(),
   size: z.number().nullable(),
   mimeType: z.string().nullable(),
+  color: z.string().nullable(),
+  icon: z.string().nullable(),
   lastModified: z.date().nullable(),
 })
 
@@ -48,6 +70,99 @@ const listResultSchema = z.object({
   hasMore: z.boolean(),
   nextCursor: listCursorSchema.nullable(),
 })
+
+const fileSearchResultItemSchema = z.object({
+  connectionId: z.string(),
+  connectionName: z.string(),
+  path: z.string(),
+  name: z.string(),
+  isDirectory: z.boolean(),
+  color: z.string().nullable(),
+})
+
+const fileSearchSqlCursorSchema = z.object({
+  connectionId: z.string(),
+  name: z.string(),
+  path: z.string(),
+})
+
+const filesSearchResultSchema = z.object({
+  items: z.array(fileSearchResultItemSchema),
+  hasMore: z.boolean(),
+  nextCursor: fileSearchSqlCursorSchema.nullable(),
+})
+
+const filesSearchInputSchema = z
+  .object({
+    query: z.string().optional(),
+    connectionIds: z.array(z.string().min(1)).optional(),
+    tagIds: z.array(z.string().min(1)).optional(),
+    colors: z.array(colorKeySchema).optional(),
+    pathPrefix: z.string().optional(),
+    limit: z.number().int().min(1).max(50).default(30),
+    cursor: fileSearchSqlCursorSchema.optional(),
+    direction: z.enum(['forward', 'backward']).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const q = data.query?.trim() ?? ''
+    const hasText = q.length > 0
+    const pp = data.pathPrefix?.trim() ?? ''
+    const hasPathPrefix = pp.length > 0
+    const hasFilters =
+      (data.connectionIds?.length ?? 0) > 0 ||
+      (data.tagIds?.length ?? 0) > 0 ||
+      (data.colors?.length ?? 0) > 0 ||
+      hasPathPrefix
+    if (!hasText && !hasFilters) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Enter a search query or choose at least one filter.',
+      })
+    }
+  })
+
+function escapeLikePattern(value: string) {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+}
+
+function ilikeSubstringCondition(raw: string): SQL {
+  const escaped = escapeLikePattern(raw.trim())
+  const pattern = `%${escaped}%`
+  return or(
+    sql`lower(${fileIndex.name}) LIKE lower(${pattern}) ESCAPE '\\'`,
+    sql`lower(${fileIndex.path}) LIKE lower(${pattern}) ESCAPE '\\'`,
+  )!
+}
+
+/** Match indexed paths under `prefix` (inclusive): the folder itself or any descendant path. */
+function pathUnderPrefixCondition(normalizedPrefix: string): SQL {
+  const escaped = escapeLikePattern(normalizedPrefix)
+  const pattern = `${escaped}/%`
+  return or(
+    eq(fileIndex.path, normalizedPrefix),
+    sql`lower(${fileIndex.path}) LIKE lower(${pattern}) ESCAPE '\\'`,
+  )!
+}
+
+function sqlOrderedAfterCursor(
+  cursor: z.infer<typeof fileSearchSqlCursorSchema>,
+): SQL {
+  return or(
+    gt(fileIndex.connectionId, cursor.connectionId),
+    and(
+      eq(fileIndex.connectionId, cursor.connectionId),
+      gt(fileIndex.name, cursor.name),
+    ),
+    and(
+      eq(fileIndex.connectionId, cursor.connectionId),
+      eq(fileIndex.name, cursor.name),
+      gt(fileIndex.path, cursor.path),
+    ),
+  )!
+}
 
 function pathName(path: string) {
   return path.split('/').filter(Boolean).at(-1) ?? ''
@@ -138,9 +253,8 @@ export const filesRouter = createTRPCRouter({
         path,
         permissionContext,
       )
-      const grantedFolderPaths = permissionContext.folderAccesses
-        .filter((entry) => entry.access !== 'none')
-        .map((entry) => normalizePath(entry.path))
+      const grantedFolderPaths =
+        getExplorerGrantedFolderPaths(permissionContext)
       const hasDescendantAccess =
         !isOrganizationAdminRole(permissionContext.organizationRole) &&
         grantedFolderPaths.some(
@@ -157,28 +271,16 @@ export const filesRouter = createTRPCRouter({
         })
       }
 
-      const canSeeDirectoryByDescendantAccess = (directoryPath: string) =>
-        grantedFolderPaths.some(
-          (grantedPath) =>
-            grantedPath.startsWith(`${directoryPath}/`) ||
-            grantedPath === directoryPath,
-        )
-
       const isVisibleEntry = (entry: {
         isDirectory: boolean
         access: (typeof permissionAccessSchema)['_output']
         path: string
-      }) => {
-        if (canRead(entry.access)) {
-          return true
-        }
-
-        if (!entry.isDirectory) {
-          return false
-        }
-
-        return canSeeDirectoryByDescendantAccess(entry.path)
-      }
+      }) =>
+        isExplorerIndexedEntryVisible(
+          permissionContext,
+          grantedFolderPaths,
+          entry,
+        )
 
       const visibleEntries: Array<z.infer<typeof fileListEntrySchema>> = []
       let folderOffset = cursor.folderOffset
@@ -280,6 +382,181 @@ export const filesRouter = createTRPCRouter({
       }
     }),
 
+  search: organizationProcedure
+    .input(filesSearchInputSchema)
+    .output(filesSearchResultSchema)
+    .query(async ({ ctx, input }) => {
+      const allowedRows = isOrganizationAdminRole(ctx.organizationRole)
+        ? await listConnectionsForOrganization(ctx.organizationId)
+        : await listVisibleConnectionsForUser(
+            ctx.organizationId,
+            ctx.sessionData.user.id,
+          )
+      const allowedIdSet = new Set(allowedRows.map((row) => row.id))
+
+      let searchConnectionIds: string[]
+      if (input.connectionIds?.length) {
+        for (const id of input.connectionIds) {
+          if (!allowedIdSet.has(id)) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid connection filter.',
+            })
+          }
+        }
+        searchConnectionIds = input.connectionIds
+      } else {
+        searchConnectionIds = [...allowedIdSet]
+      }
+
+      if (searchConnectionIds.length === 0) {
+        return { items: [], hasMore: false, nextCursor: null }
+      }
+
+      const tagIdsFilter = input.tagIds
+      if (tagIdsFilter?.length) {
+        const tagRows = await db.query.tags.findMany({
+          where: (t, operators) =>
+            operators.and(
+              operators.eq(t.organizationId, ctx.organizationId),
+              operators.inArray(t.id, tagIdsFilter),
+            ),
+          columns: { id: true },
+        })
+        if (tagRows.length !== tagIdsFilter.length) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'One or more tags were not found.',
+          })
+        }
+      }
+
+      const trimmedQuery = input.query?.trim() ?? ''
+      const conditions: SQL[] = [
+        eq(connections.organizationId, ctx.organizationId),
+        inArray(fileIndex.connectionId, searchConnectionIds),
+      ]
+
+      const pathPrefixRaw = input.pathPrefix?.trim() ?? ''
+      if (pathPrefixRaw.length > 0) {
+        const normalizedPrefix = safeNormalize(pathPrefixRaw)
+        conditions.push(pathUnderPrefixCondition(normalizedPrefix))
+      }
+
+      if (trimmedQuery.length > 0) {
+        conditions.push(ilikeSubstringCondition(trimmedQuery))
+      }
+
+      if (input.colors?.length) {
+        conditions.push(inArray(fileIndex.color, input.colors))
+      }
+
+      if (tagIdsFilter?.length) {
+        const tagMatch = db
+          .select({ value: sql`1` })
+          .from(fileTags)
+          .where(
+            and(
+              eq(fileTags.fileId, fileIndex.id),
+              inArray(fileTags.tagId, tagIdsFilter),
+            ),
+          )
+        conditions.push(exists(tagMatch))
+      }
+
+      if (input.cursor) {
+        conditions.push(sqlOrderedAfterCursor(input.cursor))
+      }
+
+      const pageSize = input.limit
+      const rows = await db
+        .select({
+          connectionId: fileIndex.connectionId,
+          connectionName: connections.name,
+          path: fileIndex.path,
+          name: fileIndex.name,
+          isDirectory: fileIndex.isDirectory,
+          color: fileIndex.color,
+        })
+        .from(fileIndex)
+        .innerJoin(connections, eq(fileIndex.connectionId, connections.id))
+        .where(and(...conditions))
+        .orderBy(
+          asc(fileIndex.connectionId),
+          asc(fileIndex.name),
+          asc(fileIndex.path),
+        )
+        .limit(pageSize)
+
+      const permissionCache = new Map<
+        string,
+        Awaited<ReturnType<typeof getPermissionContext>>
+      >()
+      const grantedPathsCache = new Map<string, string[]>()
+
+      const items: z.infer<typeof fileSearchResultItemSchema>[] = []
+
+      for (const row of rows) {
+        let permissionContext = permissionCache.get(row.connectionId)
+        if (permissionContext === undefined) {
+          permissionContext = await getPermissionContext(
+            ctx.sessionData.user.id,
+            ctx.organizationId,
+            row.connectionId,
+          )
+          permissionCache.set(row.connectionId, permissionContext)
+        }
+
+        if (!permissionContext) {
+          continue
+        }
+
+        let grantedFolderPaths = grantedPathsCache.get(row.connectionId)
+        if (!grantedFolderPaths) {
+          grantedFolderPaths = getExplorerGrantedFolderPaths(permissionContext)
+          grantedPathsCache.set(row.connectionId, grantedFolderPaths)
+        }
+
+        const access = resolvePermissionFromContext(row.path, permissionContext)
+
+        if (
+          !isExplorerIndexedEntryVisible(
+            permissionContext,
+            grantedFolderPaths,
+            {
+              path: row.path,
+              isDirectory: row.isDirectory,
+              access,
+            },
+          )
+        ) {
+          continue
+        }
+
+        items.push({
+          connectionId: row.connectionId,
+          connectionName: row.connectionName,
+          path: row.path,
+          name: row.name,
+          isDirectory: row.isDirectory,
+          color: row.color,
+        })
+      }
+
+      const hasMore = rows.length === pageSize
+      const lastRow = rows[rows.length - 1]
+      const nextCursor =
+        hasMore && lastRow
+          ? {
+              connectionId: lastRow.connectionId,
+              name: lastRow.name,
+              path: lastRow.path,
+            }
+          : null
+
+      return { items, hasMore, nextCursor }
+    }),
+
   stat: organizationProcedure
     .input(
       z.object({
@@ -300,7 +577,12 @@ export const filesRouter = createTRPCRouter({
         input.connectionId,
         ctx.organizationId,
       )
-      return provider.stat(path)
+      const entry = await provider.stat(path)
+      return {
+        ...entry,
+        color: null,
+        icon: null,
+      }
     }),
 
   mkdir: organizationProcedure
@@ -308,6 +590,8 @@ export const filesRouter = createTRPCRouter({
       z.object({
         connectionId: z.string().min(1),
         path: z.string(),
+        color: colorKeySchema.nullable().optional(),
+        icon: iconValueSchema.nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -331,6 +615,65 @@ export const filesRouter = createTRPCRouter({
         mimeType: null,
         lastModified: new Date(),
       })
+
+      if (input.color !== undefined || input.icon !== undefined) {
+        await db
+          .update(fileIndex)
+          .set({
+            ...(input.color !== undefined ? { color: input.color } : {}),
+            ...(input.icon !== undefined ? { icon: input.icon } : {}),
+          })
+          .where(
+            and(
+              eq(fileIndex.connectionId, input.connectionId),
+              eq(fileIndex.path, path),
+            ),
+          )
+      }
+    }),
+
+  updateMeta: organizationProcedure
+    .input(
+      z.object({
+        connectionId: z.string().min(1),
+        path: z.string(),
+        color: colorKeySchema.nullable().optional(),
+        icon: iconValueSchema.nullable().optional(),
+      }),
+    )
+    .output(z.object({ ok: z.literal(true) }))
+    .mutation(async ({ ctx, input }) => {
+      const path = safeNormalize(input.path)
+      await requireWritePermission(
+        ctx.sessionData.user.id,
+        ctx.organizationId,
+        input.connectionId,
+        path,
+      )
+
+      const updates: Partial<typeof fileIndex.$inferInsert> = {}
+      if (input.color !== undefined) {
+        updates.color = input.color
+      }
+      if (input.icon !== undefined) {
+        updates.icon = input.icon
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return { ok: true as const }
+      }
+
+      await db
+        .update(fileIndex)
+        .set(updates)
+        .where(
+          and(
+            eq(fileIndex.connectionId, input.connectionId),
+            eq(fileIndex.path, path),
+          ),
+        )
+
+      return { ok: true as const }
     }),
 
   delete: organizationProcedure

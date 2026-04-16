@@ -1,10 +1,13 @@
 import { OrganizationSwitcher, UserButton } from '@daveyplate/better-auth-ui'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { Building2, ChevronsUpDown, HardDrive } from 'lucide-react'
+import { useMemo } from 'react'
 
 import { authClient } from '#/lib/auth-client'
+import { getExplorerSearchContextFromPathname } from '#/lib/explorer-route'
 import { cn } from '#/lib/utils'
 
+import { AppHeaderSearch } from './app-header-search'
 import { Button } from './ui/button'
 import ThemeToggle from './ThemeToggle'
 
@@ -15,6 +18,13 @@ type AppHeaderProps = {
 
 export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   const { data: session } = authClient.useSession()
+  const activeOrganizationId = session?.session.activeOrganizationId ?? null
+
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const { activeConnectionId, activePath } = useMemo(
+    () => getExplorerSearchContextFromPathname(pathname),
+    [pathname],
+  )
 
   const wide = variant === 'wide'
 
@@ -47,7 +57,17 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
           </span>
         </Link>
 
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">
+        <div className="mx-2 flex max-w-xl min-w-0 flex-1 justify-center md:mx-4">
+          {session?.user && activeOrganizationId ? (
+            <AppHeaderSearch
+              organizationId={activeOrganizationId}
+              activeConnectionId={activeConnectionId}
+              activePath={activePath}
+            />
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
           {session?.user ? <HeaderOrganizationSwitcher /> : null}
 
           <ThemeToggle />

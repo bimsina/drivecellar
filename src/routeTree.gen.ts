@@ -26,6 +26,7 @@ import { Route as ApiShareDownloadRouteImport } from './routes/api/share/downloa
 import { Route as ApiFilesUploadRouteImport } from './routes/api/files/upload'
 import { Route as ApiFilesDownloadRouteImport } from './routes/api/files/download'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as CIdFileSplatRouteImport } from './routes/c/$id/file/$'
 
 const IndexingRoute = IndexingRouteImport.update({
   id: '/indexing',
@@ -113,6 +114,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CIdFileSplatRoute = CIdFileSplatRouteImport.update({
+  id: '/file/$',
+  path: '/file/$',
+  getParentRoute: () => CIdRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/s/$token/$': typeof STokenSplatRoute
   '/c/$id/': typeof CIdIndexRoute
   '/s/$token/': typeof STokenIndexRoute
+  '/c/$id/file/$': typeof CIdFileSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/s/$token/$': typeof STokenSplatRoute
   '/c/$id': typeof CIdIndexRoute
   '/s/$token': typeof STokenIndexRoute
+  '/c/$id/file/$': typeof CIdFileSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/s/$token/$': typeof STokenSplatRoute
   '/c/$id/': typeof CIdIndexRoute
   '/s/$token/': typeof STokenIndexRoute
+  '/c/$id/file/$': typeof CIdFileSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/s/$token/$'
     | '/c/$id/'
     | '/s/$token/'
+    | '/c/$id/file/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/s/$token/$'
     | '/c/$id'
     | '/s/$token'
+    | '/c/$id/file/$'
   id:
     | '__root__'
     | '/'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/s/$token/$'
     | '/c/$id/'
     | '/s/$token/'
+    | '/c/$id/file/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -364,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$id/file/$': {
+      id: '/c/$id/file/$'
+      path: '/file/$'
+      fullPath: '/c/$id/file/$'
+      preLoaderRoute: typeof CIdFileSplatRouteImport
+      parentRoute: typeof CIdRouteRoute
+    }
   }
 }
 
@@ -382,11 +401,13 @@ const IndexingRouteWithChildren = IndexingRoute._addFileChildren(
 interface CIdRouteRouteChildren {
   CIdSplatRoute: typeof CIdSplatRoute
   CIdIndexRoute: typeof CIdIndexRoute
+  CIdFileSplatRoute: typeof CIdFileSplatRoute
 }
 
 const CIdRouteRouteChildren: CIdRouteRouteChildren = {
   CIdSplatRoute: CIdSplatRoute,
   CIdIndexRoute: CIdIndexRoute,
+  CIdFileSplatRoute: CIdFileSplatRoute,
 }
 
 const CIdRouteRouteWithChildren = CIdRouteRoute._addFileChildren(

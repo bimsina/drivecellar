@@ -359,11 +359,7 @@ export function ConnectionIndexingPage({
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild type="button" variant="outline">
-            <Link
-              to="/c/$id"
-              params={{ id: connection.id }}
-              search={{ file: '/' }}
-            >
+            <Link to="/c/$id" params={{ id: connection.id }}>
               Open files
             </Link>
           </Button>

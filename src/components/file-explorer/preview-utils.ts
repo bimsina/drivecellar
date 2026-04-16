@@ -1,6 +1,6 @@
 import type { FileEntry } from '#/lib/storage/types'
 
-/** Max bytes to load into memory for text preview in the file detail dialog. */
+/** Max bytes to load into memory for text preview on the file detail page. */
 export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024
 
 export function buildDownloadUrl(connectionId: string, filePath: string) {

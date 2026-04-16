@@ -1,4 +1,8 @@
-import { normalizePath, PathError } from '#/lib/storage/path-utils'
+import {
+  computeParentPath,
+  normalizePath,
+  PathError,
+} from '#/lib/storage/path-utils'
 
 export type ExplorerRouteTarget =
   | {
@@ -14,6 +18,14 @@ export type ExplorerRouteTarget =
         _splat: string
       }
     }
+
+export type ExplorerFileDetailRouteTarget = {
+  to: '/c/$id/file/$'
+  params: {
+    id: string
+    _splat: string
+  }
+}
 
 export function getExplorerRouteTarget(
   connectionId: string,
@@ -37,6 +49,22 @@ export function getExplorerRouteTarget(
   }
 }
 
+/** Full-page file preview at `/c/:id/file/*path`. */
+export function getExplorerFileDetailRouteTarget(
+  connectionId: string,
+  filePath: string,
+): ExplorerFileDetailRouteTarget {
+  const normalizedPath = normalizePath(filePath)
+
+  return {
+    to: '/c/$id/file/$',
+    params: {
+      id: connectionId,
+      _splat: normalizedPath === '/' ? '' : normalizedPath.slice(1),
+    },
+  }
+}
+
 export function getExplorerPathFromSplat(splat: string | undefined): string {
   if (!splat) {
     return '/'
@@ -53,20 +81,40 @@ export function getExplorerPathFromSplat(splat: string | undefined): string {
   }
 }
 
-export function validateExplorerSearch(search: Record<string, unknown>) {
-  const rawFile = typeof search.file === 'string' ? search.file : undefined
+export function validateExplorerSearch(_search: Record<string, unknown>) {
+  return {}
+}
 
-  if (!rawFile) {
-    return { file: undefined }
+/** Resolve connection + folder path from the browser URL for search scope (explorer + file preview routes). */
+export function getExplorerSearchContextFromPathname(pathname: string): {
+  activeConnectionId?: string
+  activePath?: string
+} {
+  if (!pathname.startsWith('/c/')) {
+    return {}
   }
 
-  try {
-    return { file: normalizePath(rawFile) }
-  } catch (error) {
-    if (error instanceof PathError) {
-      return { file: undefined }
+  const afterPrefix = pathname.slice('/c/'.length)
+  const firstSlash = afterPrefix.indexOf('/')
+  const connectionId =
+    firstSlash === -1 ? afterPrefix : afterPrefix.slice(0, firstSlash)
+  if (!connectionId) {
+    return {}
+  }
+
+  const rest = firstSlash === -1 ? '' : afterPrefix.slice(firstSlash + 1)
+
+  if (rest === 'file' || rest.startsWith('file/')) {
+    const fileSplat = rest === 'file' ? '' : rest.slice('file/'.length)
+    try {
+      const filePath = getExplorerPathFromSplat(fileSplat || undefined)
+      const parentPath = computeParentPath(filePath)
+      return { activeConnectionId: connectionId, activePath: parentPath }
+    } catch {
+      return { activeConnectionId: connectionId, activePath: '/' }
     }
-
-    throw error
   }
+
+  const activePath = getExplorerPathFromSplat(rest || undefined)
+  return { activeConnectionId: connectionId, activePath }
 }

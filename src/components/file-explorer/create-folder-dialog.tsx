@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
+import { ColorPicker } from '#/components/ui/color-picker'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { FieldError } from '#/components/ui/field-error'
+import { IconPicker } from '#/components/ui/icon-picker'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { useTRPC } from '#/integrations/trpc/react'
@@ -36,6 +39,9 @@ export function CreateFolderDialog({
   const nameId = useId()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showCustomize, setShowCustomize] = useState(false)
+  const [color, setColor] = useState<string | null>(null)
+  const [icon, setIcon] = useState<string | null>(null)
 
   const mkdirMutation = useMutation(
     trpc.files.mkdir.mutationOptions({
@@ -49,6 +55,9 @@ export function CreateFolderDialog({
         toast.success('Folder created.')
         setName('')
         setError(null)
+        setColor(null)
+        setIcon(null)
+        setShowCustomize(false)
         onOpenChange(false)
       },
       onError: (e) => {
@@ -78,7 +87,7 @@ export function CreateFolderDialog({
     }
 
     setError(null)
-    mkdirMutation.mutate({ connectionId, path: targetPath })
+    mkdirMutation.mutate({ connectionId, path: targetPath, color, icon })
   }
 
   return (
@@ -102,6 +111,28 @@ export function CreateFolderDialog({
               disabled={mkdirMutation.isPending}
             />
             {error ? <FieldError errors={[error]} /> : null}
+            <button
+              type="button"
+              onClick={() => setShowCustomize((current) => !current)}
+              className="text-muted-foreground hover:text-foreground mt-1 inline-flex items-center gap-1 text-xs"
+            >
+              <ChevronDown
+                className={showCustomize ? 'size-3.5 rotate-180' : 'size-3.5'}
+              />
+              Customize
+            </button>
+            {showCustomize ? (
+              <div className="space-y-3 rounded-md border p-3">
+                <div className="space-y-2">
+                  <Label>Color</Label>
+                  <ColorPicker value={color} onChange={setColor} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Icon</Label>
+                  <IconPicker value={icon} onChange={setIcon} />
+                </div>
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button

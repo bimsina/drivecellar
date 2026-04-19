@@ -206,7 +206,3 @@ This repository is actively under development. The existing implementation alrea
 - permissions
 - tags
 - shared links
-
-## License
-
-No license file is currently present in the repository.

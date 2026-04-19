@@ -1,6 +1,5 @@
-import { Badge } from '#/components/ui/badge'
-import { getPaletteSwatchStyle } from '#/lib/color-palette.ts'
 import type { TagListItem } from '#/lib/tags.ts'
+import { TagChip } from '#/components/tags/tag-chip'
 import { cn } from '#/lib/utils'
 
 type TagBadgesProps = {
@@ -24,24 +23,17 @@ export function TagBadges({
   return (
     <span className="inline-flex items-center gap-1">
       {visible.map((tag) => (
-        <Badge
-          key={tag.id}
-          style={getPaletteSwatchStyle(tag.color)}
-          className={cn(
-            'border-none text-white',
-            size === 'sm' ? 'h-4 text-[10px]' : 'h-5 text-xs',
-          )}
-        >
-          {tag.name}
-        </Badge>
+        <TagChip key={tag.id} color={tag.color} label={tag.name} size={size} />
       ))}
       {overflow > 0 ? (
-        <Badge
-          variant="secondary"
-          className={size === 'sm' ? 'h-4 text-[10px]' : 'h-5 text-xs'}
+        <span
+          className={cn(
+            'text-muted-foreground bg-muted inline-flex items-center rounded-full border border-transparent px-2 py-0.5 font-medium',
+            size === 'sm' ? 'min-h-4 text-[10px]' : 'min-h-5 text-xs',
+          )}
         >
           +{overflow}
-        </Badge>
+        </span>
       ) : null}
     </span>
   )

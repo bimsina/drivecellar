@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react'
-import { ArrowDownAZ, ArrowUpAZ, ChevronDown, MoreVertical } from 'lucide-react'
+import {
+  ArrowDownAZ,
+  ArrowUpAZ,
+  CalendarDays,
+  ChevronDown,
+  HardDrive,
+  MoreVertical,
+  TextCursorInput,
+} from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -27,6 +35,12 @@ const fieldLabels: Record<ToolbarSortField, string> = {
   name: 'Name',
   modified: 'Date modified',
   size: 'File size',
+}
+
+const fieldIcons: Record<ToolbarSortField, typeof TextCursorInput> = {
+  name: TextCursorInput,
+  modified: CalendarDays,
+  size: HardDrive,
 }
 
 const defaultAllowed: ToolbarSortField[] = ['name', 'modified', 'size']
@@ -78,15 +92,20 @@ export function SortToolbar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[11rem]">
-          {fields.map((field) => (
-            <DropdownMenuItem
-              key={field}
-              onClick={() => onSortFieldChange(field)}
-              className={sortField === field ? 'bg-accent' : ''}
-            >
-              {fieldLabels[field]}
-            </DropdownMenuItem>
-          ))}
+          {fields.map((field) => {
+            const Icon = fieldIcons[field]
+
+            return (
+              <DropdownMenuItem
+                key={field}
+                onClick={() => onSortFieldChange(field)}
+                className={sortField === field ? 'bg-accent' : ''}
+              >
+                <Icon className="size-4" />
+                {fieldLabels[field]}
+              </DropdownMenuItem>
+            )
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
 

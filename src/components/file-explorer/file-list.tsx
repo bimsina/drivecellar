@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
+  FolderCog,
   Download,
   FileIcon,
   FolderIcon,
@@ -8,6 +9,7 @@ import {
   MoreVertical,
   Pencil,
   Shield,
+  Tag,
   Trash2,
 } from 'lucide-react'
 import {
@@ -249,6 +251,7 @@ function FolderCard({
                     event.stopPropagation()
                   }}
                 >
+                  <Tag className="size-4" />
                   Tags
                 </DropdownMenuItem>
               }
@@ -262,6 +265,7 @@ function FolderCard({
                     onCustomize()
                   }}
                 >
+                  <FolderCog className="size-4" />
                   Customize
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -384,6 +388,7 @@ function FileCard({
                     event.stopPropagation()
                   }}
                 >
+                  <Tag className="size-4" />
                   Tags
                 </DropdownMenuItem>
               }
@@ -771,6 +776,7 @@ export function FileList({
                   event.preventDefault()
                 }}
               >
+                <Tag className="size-4" />
                 Tags
               </ContextMenuItem>
             }
@@ -780,6 +786,7 @@ export function FileList({
               <ContextMenuSeparator />
               {entry.isDirectory ? (
                 <ContextMenuItem onSelect={() => openCustomize(entry)}>
+                  <FolderCog className="size-4" />
                   Customize
                 </ContextMenuItem>
               ) : null}

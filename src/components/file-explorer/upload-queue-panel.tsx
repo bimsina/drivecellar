@@ -30,7 +30,7 @@ function statusIcon(upload: QueuedUpload) {
     case 'error':
       return <AlertCircle className="text-destructive size-3.5" />
     default:
-      return <div className="bg-muted-foreground/45 size-2 rounded-full" />
+      return <div className="bg-muted-foreground/45 size-2 rounded-sm" />
   }
 }
 
@@ -72,7 +72,7 @@ export function UploadQueuePanel({
 
   return (
     <div className="pointer-events-none fixed right-4 bottom-4 z-50 w-[min(24rem,calc(100vw-1.5rem))]">
-      <div className="border-border/70 bg-background/95 pointer-events-auto overflow-hidden rounded-2xl border backdrop-blur-xl">
+      <div className="border-border/70 bg-background/95 pointer-events-auto overflow-hidden rounded-sm border backdrop-blur-xl">
         <button
           type="button"
           className="hover:bg-muted/50 w-full px-4 py-3 text-left transition-colors"
@@ -105,7 +105,7 @@ export function UploadQueuePanel({
                       type="button"
                       size="icon-xs"
                       variant="ghost"
-                      className="text-muted-foreground hover:text-foreground h-7 w-7 rounded-full"
+                      className="text-muted-foreground hover:text-foreground h-7 w-7 rounded-sm"
                       onClick={(event) => {
                         event.stopPropagation()
                         onDismissComplete()
@@ -123,10 +123,10 @@ export function UploadQueuePanel({
                 </div>
               </div>
 
-              <div className="bg-muted mt-2 h-1 overflow-hidden rounded-full">
+              <div className="bg-muted mt-2 h-1 overflow-hidden rounded-sm">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-[width] duration-300 ease-out',
+                    'h-full rounded-sm transition-[width] duration-300 ease-out',
                     summary.failed > 0 ? 'bg-destructive/70' : 'bg-primary',
                   )}
                   style={{ width: `${summary.averageProgress}%` }}
@@ -167,7 +167,7 @@ export function UploadQueuePanel({
                           type="button"
                           size="icon-xs"
                           variant="ghost"
-                          className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 rounded-full"
+                          className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 rounded-sm"
                           onClick={() => onRemoveUpload(upload.id)}
                           aria-label={`Remove ${getUploadLabel(upload)} from queue`}
                         >
@@ -177,10 +177,10 @@ export function UploadQueuePanel({
                     </div>
 
                     <div className="mt-2 flex items-center gap-2.5">
-                      <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
+                      <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-sm">
                         <div
                           className={cn(
-                            'h-full rounded-full transition-[width] duration-200 ease-out',
+                            'h-full rounded-sm transition-[width] duration-200 ease-out',
                             progressBarClass(upload),
                           )}
                           style={{ width: `${upload.progress}%` }}

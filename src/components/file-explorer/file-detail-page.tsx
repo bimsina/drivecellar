@@ -68,7 +68,7 @@ export function FileDetailPage({
     if (fileDetailQuery.data.isDirectory) {
       void navigate({
         ...getExplorerRouteTarget(connectionId, filePath),
-        replace: true,
+        replace: false,
       })
     }
   }, [connectionId, fileDetailQuery.data, filePath, navigate])

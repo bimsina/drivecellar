@@ -120,7 +120,7 @@ export function ColorPicker({
                   setOpen(false)
                 }}
                 className={cn(
-                  'text-primary-foreground flex size-7 items-center justify-center rounded-full border transition-transform hover:scale-105',
+                  'text-primary-foreground flex size-7 items-center justify-center rounded-full border transition-colors',
                   isSelected && 'ring-2 ring-[--tag-ring-color]',
                 )}
                 style={{

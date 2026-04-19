@@ -420,10 +420,10 @@ export function PathAccessDialog({
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-3">
               {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-24 rounded-2xl" />
+                <Skeleton key={index} className="h-24 rounded-sm" />
               ))}
             </div>
-            <Skeleton className="h-64 rounded-2xl" />
+            <Skeleton className="h-64 rounded-sm" />
           </div>
         ) : loadError ? (
           <Alert variant="destructive">
@@ -536,7 +536,7 @@ export function PathAccessDialog({
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border">
+            <div className="overflow-hidden rounded-sm border">
               <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>

@@ -1,23 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  FolderCog,
   Download,
   FileIcon,
+  FolderCog,
   FolderIcon,
+  Info,
   LayoutGrid,
   List,
-  MoreVertical,
   Pencil,
   Shield,
   Tag,
   Trash2,
 } from 'lucide-react'
 import {
+  useCallback,
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
-  useCallback,
+  type KeyboardEvent,
   type RefObject,
 } from 'react'
 import {
@@ -56,13 +58,6 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { DynamicIcon } from '#/components/ui/dynamic-icon'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '#/components/ui/dropdown-menu'
 import { FieldError } from '#/components/ui/field-error'
 import { IconPicker } from '#/components/ui/icon-picker'
 import { Input } from '#/components/ui/input'
@@ -71,8 +66,8 @@ import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { TagBadges } from '#/components/tags/tag-badges'
 import { TagManager } from '#/components/tags/tag-manager'
 import { useTRPC } from '#/integrations/trpc/react'
-import type { PermissionAccess } from '#/lib/connections'
 import { getPaletteIconBadgeStyle } from '#/lib/color-palette.ts'
+import type { PermissionAccess } from '#/lib/connections'
 import type { FileEntry } from '#/lib/storage/types'
 import { normalizePath, PathError } from '#/lib/storage/path-utils'
 import type { TagListItem } from '#/lib/tags.ts'
@@ -81,11 +76,11 @@ import { cn } from '#/lib/utils'
 import { buildDownloadUrl, isImageEntry } from './preview-utils'
 
 const LIST_VIRTUAL_ROW_HEIGHT = 64
-const GRID_FOLDER_CARD_HEIGHT = 64
-const GRID_FILE_CARD_HEIGHT = 160
-const GRID_SECTION_HEADER_HEIGHT = 32
-const GRID_FOLDER_ROW_HEIGHT = GRID_FOLDER_CARD_HEIGHT + 8
-const GRID_FILE_ROW_HEIGHT = GRID_FILE_CARD_HEIGHT + 8
+const GRID_FOLDER_CARD_HEIGHT = 78
+const GRID_FILE_CARD_HEIGHT = 182
+const GRID_SECTION_HEADER_HEIGHT = 36
+const GRID_FOLDER_ROW_HEIGHT = GRID_FOLDER_CARD_HEIGHT + 10
+const GRID_FILE_ROW_HEIGHT = GRID_FILE_CARD_HEIGHT + 10
 const GRID_FOLDER_CARD_STYLE: React.CSSProperties = {
   height: GRID_FOLDER_CARD_HEIGHT,
   minHeight: GRID_FOLDER_CARD_HEIGHT,
@@ -103,7 +98,9 @@ function formatBytes(n: number | null) {
 }
 
 function formatCompactDate(value: Date | null) {
-  if (!value) return '—'
+  if (!value) {
+    return '—'
+  }
 
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
@@ -159,289 +156,56 @@ function sortEntries<TEntry extends FileEntry>(
   return copy
 }
 
-function FolderCard({
-  connectionId,
-  entry,
-  tags,
-  canWrite,
-  canManagePermissions,
-  onOpen,
-  onManageAccess,
-  onCustomize,
-  onRename,
-  onDelete,
-}: {
-  connectionId: string
-  entry: ExplorerFileEntry
-  tags: TagListItem[]
-  canWrite: boolean
-  canManagePermissions: boolean
-  onOpen: () => void
-  onManageAccess: () => void
-  onCustomize: () => void
-  onRename: () => void
-  onDelete: () => void
-}) {
-  return (
-    <div
-      style={GRID_FOLDER_CARD_STYLE}
-      className="group border-border/50 bg-card/90 hover:bg-muted/60 flex items-stretch gap-1 rounded-xl border py-0.5 transition-colors duration-150"
-    >
-      <button
-        type="button"
-        onClick={onOpen}
-        className="text-foreground focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
-      >
-        <span
-          className={cn(
-            'bg-primary/10 text-primary border-primary/20 flex shrink-0 items-center justify-center rounded-lg border p-1.5',
-          )}
-          style={getPaletteIconBadgeStyle(entry.color)}
-        >
-          <DynamicIcon
-            value={entry.icon}
-            fallback={<FolderIcon className="size-4" strokeWidth={2} />}
-            className="size-4"
-          />
-        </span>
-        <span className="min-w-0 flex-1 truncate">
-          {entry.name}
-          <span className="ml-2 inline-flex align-middle">
-            <TagBadges tags={tags} />
-          </span>
-        </span>
-      </button>
-      {canWrite ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-9 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-              }}
-            >
-              <MoreVertical className="size-4.5" />
-              <span className="sr-only">More actions for {entry.name}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-40">
-            {canManagePermissions ? (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onManageAccess()
-                }}
-              >
-                <Shield className="size-4" />
-                Manage access
-              </DropdownMenuItem>
-            ) : null}
-            <TagManager
-              connectionId={connectionId}
-              path={entry.path}
-              currentTagIds={tags.map((tag) => tag.id)}
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                  }}
-                >
-                  <Tag className="size-4" />
-                  Tags
-                </DropdownMenuItem>
-              }
-            />
-            {canWrite ? (
-              <>
-                {canManagePermissions ? <DropdownMenuSeparator /> : null}
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCustomize()
-                  }}
-                >
-                  <FolderCog className="size-4" />
-                  Customize
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRename()
-                  }}
-                >
-                  <Pencil className="size-4" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete()
-                  }}
-                >
-                  <Trash2 className="size-4" />
-                  Delete
-                </DropdownMenuItem>
-              </>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
-    </div>
-  )
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const media = window.matchMedia('(pointer: coarse)')
+    const update = () => setCoarse(media.matches)
+
+    update()
+    media.addEventListener('change', update)
+    return () => {
+      media.removeEventListener('change', update)
+    }
+  }, [])
+
+  return coarse
 }
 
-function FileCard({
-  connectionId,
-  entry,
-  tags,
-  canWrite,
-  canManagePermissions,
-  onOpen,
-  onManageAccess,
-  onRename,
-  onDelete,
-  onDownload,
-}: {
-  connectionId: string
-  entry: ExplorerFileEntry
-  tags: TagListItem[]
-  canWrite: boolean
-  canManagePermissions: boolean
-  onOpen: () => void
-  onManageAccess: () => void
-  onRename: () => void
-  onDelete: () => void
-  onDownload: () => void
-}) {
-  const src = buildDownloadUrl(connectionId, entry.path)
-  const showImage = isImageEntry(entry)
-  const shortLabel = fileTypeShortLabel(entry)
+function getInitialSelectionIndex(
+  key: string,
+  itemCount: number,
+  viewMode: FileListViewMode,
+) {
+  if (itemCount === 0) {
+    return -1
+  }
 
-  return (
-    <div
-      style={GRID_FILE_CARD_STYLE}
-      className="group border-border/50 bg-card/90 hover:bg-muted/60 flex flex-col overflow-hidden rounded-xl border transition-colors duration-150"
-    >
-      <div className="border-border/30 flex items-center gap-2 border-b px-3 py-2">
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={onOpen}
-            className="text-foreground focus-visible:ring-ring min-w-0 cursor-pointer truncate text-left text-xs font-medium outline-none focus-visible:ring-2"
-          >
-            {entry.name}
-          </button>
-          <TagBadges tags={tags} size="sm" maxVisible={2} />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent size-7 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            >
-              <MoreVertical className="size-4" />
-              <span className="sr-only">More actions for {entry.name}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-40">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation()
-                onDownload()
-              }}
-            >
-              <Download className="size-4" />
-              Download
-            </DropdownMenuItem>
-            {canManagePermissions ? (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onManageAccess()
-                }}
-              >
-                <Shield className="size-4" />
-                Manage access
-              </DropdownMenuItem>
-            ) : null}
-            <TagManager
-              connectionId={connectionId}
-              path={entry.path}
-              currentTagIds={tags.map((tag) => tag.id)}
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                  }}
-                >
-                  <Tag className="size-4" />
-                  Tags
-                </DropdownMenuItem>
-              }
-            />
-            {canWrite ? (
-              <>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRename()
-                  }}
-                >
-                  <Pencil className="size-4" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete()
-                  }}
-                >
-                  <Trash2 className="size-4" />
-                  Delete
-                </DropdownMenuItem>
-              </>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="bg-muted/30 hover:bg-muted/50 focus-visible:ring-ring flex min-h-26 flex-1 cursor-pointer items-center justify-center p-3 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-inset"
-      >
-        {showImage ? (
-          <img
-            src={src}
-            alt=""
-            className="max-h-24 w-full max-w-full object-contain"
-            loading="lazy"
-          />
-        ) : (
-          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2">
-            <div className="bg-primary/10 flex items-center justify-center rounded-lg p-2">
-              <FileIcon className="size-8 opacity-60" strokeWidth={1.5} />
-            </div>
-            <span className="text-[11px] font-medium">{shortLabel}</span>
-          </div>
-        )}
-      </button>
-    </div>
+  if (key === 'End') {
+    return itemCount - 1
+  }
+
+  if (viewMode === 'grid' && (key === 'ArrowUp' || key === 'ArrowLeft')) {
+    return itemCount - 1
+  }
+
+  return 0
+}
+
+function isEntryActionTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  return Boolean(
+    target.closest(
+      'button, a, input, textarea, select, [contenteditable="true"], [role="menuitem"]',
+    ),
   )
 }
 
@@ -450,6 +214,140 @@ export type ExplorerFileEntry = FileEntry & {
   access: PermissionAccess
   color: string | null
   icon: string | null
+}
+
+type BaseEntryProps = {
+  connectionId: string
+  entry: ExplorerFileEntry
+  tags: TagListItem[]
+  canWrite: boolean
+  canManagePermissions: boolean
+  isSelected: boolean
+  onSelect: () => void
+  onActivate: () => void
+  onManageAccess: () => void
+  onShowDetails: () => void
+  onCustomize: () => void
+  onRename: () => void
+  onDelete: () => void
+  onDownload: () => void
+}
+
+function FolderCard({
+  connectionId,
+  entry,
+  tags,
+  isSelected,
+  onSelect,
+  onActivate,
+}: BaseEntryProps) {
+  return (
+    <div
+      data-selected={isSelected ? 'true' : undefined}
+      style={GRID_FOLDER_CARD_STYLE}
+      onClick={onSelect}
+      onDoubleClick={onActivate}
+      onContextMenuCapture={onSelect}
+      className={cn(
+        'group flex cursor-default items-stretch gap-2 rounded-sm border px-2 py-1.5 transition-[background-color,border-color,box-shadow] duration-150',
+        isSelected
+          ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
+          : 'border-border/75 bg-card/92 hover:border-border hover:bg-muted/72',
+      )}
+    >
+      <div
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-sm px-3 py-2"
+        role="button"
+        tabIndex={-1}
+        aria-pressed={isSelected}
+      >
+        <span
+          className="text-primary flex size-11 shrink-0 items-center justify-center"
+          style={getPaletteIconBadgeStyle(entry.color)}
+        >
+          <DynamicIcon
+            value={entry.icon}
+            fallback={<FolderIcon className="size-4.5" strokeWidth={2} />}
+            className="size-4.5"
+          />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="text-foreground block truncate text-sm font-semibold">
+            {entry.name}
+          </span>
+          <span className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+            <span>Folder</span>
+            <TagBadges tags={tags} size="sm" maxVisible={2} />
+          </span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function FileCard({
+  connectionId,
+  entry,
+  tags,
+  isSelected,
+  onSelect,
+  onActivate,
+}: BaseEntryProps) {
+  const src = buildDownloadUrl(connectionId, entry.path)
+  const showImage = isImageEntry(entry)
+  const shortLabel = fileTypeShortLabel(entry)
+
+  return (
+    <div
+      data-selected={isSelected ? 'true' : undefined}
+      style={GRID_FILE_CARD_STYLE}
+      onClick={onSelect}
+      onDoubleClick={onActivate}
+      onContextMenuCapture={onSelect}
+      className={cn(
+        'group flex cursor-default flex-col overflow-hidden rounded-sm border transition-[background-color,border-color,box-shadow] duration-150',
+        isSelected
+          ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
+          : 'border-border/75 bg-card/92 hover:border-border hover:bg-muted/72',
+      )}
+    >
+      <div className="border-border/50 flex items-start gap-2 border-b px-3 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground truncate text-sm font-semibold">
+            {entry.name}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {shortLabel}
+            {entry.size !== null ? ` · ${formatBytes(entry.size)}` : ''}
+          </p>
+          <TagBadges tags={tags} size="sm" maxVisible={2} className="mt-2" />
+        </div>
+      </div>
+
+      <div
+        className="bg-muted/35 flex min-h-28 flex-1 items-center justify-center px-4 py-4"
+        role="button"
+        tabIndex={-1}
+        aria-pressed={isSelected}
+      >
+        {showImage ? (
+          <img
+            src={src}
+            alt=""
+            className="max-h-24 w-full max-w-full rounded-sm object-contain"
+            loading="lazy"
+          />
+        ) : (
+          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2">
+            <div className="text-primary flex items-center justify-center p-3">
+              <FileIcon className="size-8" strokeWidth={1.6} />
+            </div>
+            <span className="text-[11px] font-semibold">{shortLabel}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 type FileListProps = {
@@ -472,6 +370,10 @@ type FileListProps = {
     isDirectory: boolean
   }) => void
   tagsByPath: Record<string, TagListItem[]>
+  selectedPath: string | null
+  onSelectedPathChange: (path: string | null) => void
+  inspectorOpen: boolean
+  onInspectorOpenChange: (open: boolean) => void
 }
 
 export function FileList({
@@ -490,6 +392,10 @@ export function FileList({
   onOpenFile,
   onManageAccess,
   tagsByPath,
+  selectedPath,
+  onSelectedPathChange,
+  inspectorOpen,
+  onInspectorOpenChange,
 }: FileListProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -507,6 +413,10 @@ export function FileList({
   const [metaIcon, setMetaIcon] = useState<string | null>(null)
   const [sortField, setSortField] = useState<ToolbarSortField>('name')
   const [sortAscending, setSortAscending] = useState(true)
+  const coarsePointer = useCoarsePointer()
+  const interactionRef = useRef<HTMLDivElement | null>(null)
+  const entryRefs = useRef(new Map<string, HTMLDivElement>())
+  const gridColumnsRef = useRef(1)
 
   const folders = useMemo(() => entries.filter((e) => e.isDirectory), [entries])
   const files = useMemo(() => entries.filter((e) => !e.isDirectory), [entries])
@@ -519,6 +429,64 @@ export function FileList({
     () => sortEntries(files, sortField, sortAscending),
     [files, sortAscending, sortField],
   )
+
+  const listCombined = useMemo(
+    () => [...sortedFolders, ...sortedFiles],
+    [sortedFiles, sortedFolders],
+  )
+
+  useEffect(() => {
+    if (!selectedPath) {
+      return
+    }
+
+    const stillExists = listCombined.some(
+      (entry) => entry.path === selectedPath,
+    )
+    if (!stillExists) {
+      onSelectedPathChange(null)
+    }
+  }, [listCombined, onSelectedPathChange, selectedPath])
+
+  const selectedIndex = useMemo(
+    () => listCombined.findIndex((entry) => entry.path === selectedPath),
+    [listCombined, selectedPath],
+  )
+
+  const focusExplorerTarget = useCallback(() => {
+    if (coarsePointer) {
+      return
+    }
+
+    if (selectedPath) {
+      const selectedElement = entryRefs.current.get(selectedPath)
+
+      if (selectedElement) {
+        selectedElement.focus({ preventScroll: true })
+        selectedElement.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest',
+        })
+        return
+      }
+    }
+
+    interactionRef.current?.focus({ preventScroll: true })
+  }, [coarsePointer, selectedPath])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      focusExplorerTarget()
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [focusExplorerTarget, inspectorOpen, selectedPath])
 
   async function invalidateList() {
     await queryClient.invalidateQueries(
@@ -642,9 +610,106 @@ export function FileList({
     window.location.assign(url)
   }
 
+  function openEntry(entry: ExplorerFileEntry) {
+    if (entry.isDirectory) {
+      onNavigate(entry.path)
+      return
+    }
+
+    onOpenFile(entry.path)
+  }
+
+  function selectEntry(path: string) {
+    onSelectedPathChange(path)
+  }
+
+  function handleEntryInteraction(entry: ExplorerFileEntry) {
+    selectEntry(entry.path)
+
+    if (coarsePointer) {
+      openEntry(entry)
+    }
+  }
+
+  function handleShowDetails(entry: ExplorerFileEntry) {
+    selectEntry(entry.path)
+    onInspectorOpenChange(true)
+  }
+
+  function renderContextMenu(entry: ExplorerFileEntry, tags: TagListItem[]) {
+    const canWrite = entry.access === 'editor'
+
+    return (
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem onSelect={() => handleShowDetails(entry)}>
+          <Info className="size-4" />
+          Show details
+        </ContextMenuItem>
+        {!entry.isDirectory ? (
+          <ContextMenuItem onSelect={() => triggerDownload(entry)}>
+            <Download className="size-4" />
+            Download
+          </ContextMenuItem>
+        ) : null}
+        {canManagePermissions ? (
+          <ContextMenuItem
+            onSelect={() =>
+              onManageAccess({
+                path: entry.path,
+                itemName: entry.name,
+                isDirectory: entry.isDirectory,
+              })
+            }
+          >
+            <Shield className="size-4" />
+            Manage access
+          </ContextMenuItem>
+        ) : null}
+        <TagManager
+          connectionId={connectionId}
+          path={entry.path}
+          currentTagIds={tags.map((tag) => tag.id)}
+          trigger={
+            <ContextMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+              }}
+            >
+              <Tag className="size-4" />
+              Tags
+            </ContextMenuItem>
+          }
+        />
+        {canWrite ? (
+          <>
+            <ContextMenuSeparator />
+            {entry.isDirectory ? (
+              <ContextMenuItem onSelect={() => openCustomize(entry)}>
+                <FolderCog className="size-4" />
+                Customize
+              </ContextMenuItem>
+            ) : null}
+            <ContextMenuItem onSelect={() => openRename(entry)}>
+              <Pencil className="size-4" />
+              Rename
+            </ContextMenuItem>
+            <ContextMenuItem
+              variant="destructive"
+              onSelect={() => setDeleteTarget(entry)}
+            >
+              <Trash2 className="size-4" />
+              Delete
+            </ContextMenuItem>
+          </>
+        ) : null}
+      </ContextMenuContent>
+    )
+  }
+
   function rowForEntry(entry: ExplorerFileEntry) {
     const canWrite = entry.access === 'editor'
     const tags = tagsByPath[entry.path] ?? []
+    const isSelected = entry.path === selectedPath
 
     const inner =
       viewMode === 'grid' ? (
@@ -655,7 +720,9 @@ export function FileList({
             tags={tags}
             canWrite={canWrite}
             canManagePermissions={canManagePermissions}
-            onOpen={() => onNavigate(entry.path)}
+            isSelected={isSelected}
+            onSelect={() => handleEntryInteraction(entry)}
+            onActivate={() => openEntry(entry)}
             onManageAccess={() =>
               onManageAccess({
                 path: entry.path,
@@ -663,6 +730,7 @@ export function FileList({
                 isDirectory: true,
               })
             }
+            onShowDetails={() => handleShowDetails(entry)}
             onCustomize={() => openCustomize(entry)}
             onRename={() => openRename(entry)}
             onDelete={() => {
@@ -671,6 +739,7 @@ export function FileList({
               }
               setDeleteTarget(entry)
             }}
+            onDownload={() => triggerDownload(entry)}
           />
         ) : (
           <FileCard
@@ -679,7 +748,9 @@ export function FileList({
             tags={tags}
             canWrite={canWrite}
             canManagePermissions={canManagePermissions}
-            onOpen={() => onOpenFile(entry.path)}
+            isSelected={isSelected}
+            onSelect={() => handleEntryInteraction(entry)}
+            onActivate={() => openEntry(entry)}
             onManageAccess={() =>
               onManageAccess({
                 path: entry.path,
@@ -687,6 +758,8 @@ export function FileList({
                 isDirectory: false,
               })
             }
+            onShowDetails={() => handleShowDetails(entry)}
+            onCustomize={() => openCustomize(entry)}
             onRename={() => openRename(entry)}
             onDelete={() => {
               if (!canWrite) {
@@ -699,120 +772,75 @@ export function FileList({
         )
       ) : (
         <div
-          className="bg-card/90 hover:bg-muted flex h-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 px-3 py-2 transition-colors"
-          onClick={() => {
-            if (entry.isDirectory) {
-              onNavigate(entry.path)
-            } else {
-              onOpenFile(entry.path)
-            }
-          }}
+          data-selected={isSelected ? 'true' : undefined}
+          onClick={() => handleEntryInteraction(entry)}
+          onDoubleClick={() => openEntry(entry)}
+          onContextMenuCapture={() => selectEntry(entry.path)}
+          className={cn(
+            'group flex h-full min-h-0 cursor-default items-center justify-between gap-3 rounded-sm border px-3 py-2 transition-[background-color,border-color,box-shadow]',
+            isSelected
+              ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
+              : 'border-border/70 bg-card/94 hover:border-border hover:bg-muted/72',
+          )}
         >
           <span className="inline-flex min-w-0 items-center gap-3">
             <span
               className={cn(
-                'flex shrink-0 items-center justify-center',
-                entry.isDirectory ? 'text-foreground' : 'text-muted-foreground',
+                'flex size-10 shrink-0 items-center justify-center',
+                entry.isDirectory ? 'text-primary' : 'text-muted-foreground',
               )}
+              style={
+                entry.isDirectory
+                  ? getPaletteIconBadgeStyle(entry.color)
+                  : undefined
+              }
             >
               {entry.isDirectory ? (
-                <FolderIcon className="size-4 shrink-0" />
+                <DynamicIcon
+                  value={entry.icon}
+                  fallback={<FolderIcon className="size-4.5 shrink-0" />}
+                  className="size-4.5 shrink-0"
+                />
               ) : (
-                <FileIcon className="size-4 shrink-0" />
+                <FileIcon className="size-4.5 shrink-0" />
               )}
             </span>
             <span className="min-w-0">
-              <span className="text-foreground block truncate text-sm font-medium">
+              <span className="text-foreground block truncate text-sm font-semibold">
                 {entry.name}
               </span>
-              <TagBadges tags={tags} size="sm" maxVisible={1} />
-              <span className="text-muted-foreground block text-xs font-normal">
-                {entry.isDirectory
-                  ? 'Folder'
-                  : (entry.mimeType ?? 'Stored file')}
+              <span className="text-muted-foreground mt-1 flex items-center gap-2 text-xs font-normal">
+                <span>
+                  {entry.isDirectory
+                    ? 'Folder'
+                    : (entry.mimeType ?? fileTypeShortLabel(entry))}
+                </span>
+                <TagBadges tags={tags} size="sm" maxVisible={1} />
               </span>
             </span>
           </span>
-          <div className="ml-2 flex shrink-0 items-center gap-4 text-xs">
-            <span className="text-muted-foreground hidden min-w-28 text-right md:block">
+
+          <div className="ml-2 flex shrink-0 items-center gap-4">
+            <div className="text-muted-foreground hidden min-w-28 text-right text-xs md:block">
               {formatCompactDate(entry.lastModified)}
-            </span>
-            <span className="text-muted-foreground min-w-16 text-right">
+            </div>
+            <div className="text-muted-foreground min-w-16 text-right text-xs">
               {entry.isDirectory ? '—' : formatBytes(entry.size)}
-            </span>
+            </div>
           </div>
         </div>
       )
 
     return (
       <ContextMenu key={entry.path}>
-        <ContextMenuTrigger asChild>{inner}</ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
-          <ContextMenuItem onSelect={() => triggerDownload(entry)}>
-            <Download className="size-4" />
-            Download
-          </ContextMenuItem>
-          {canManagePermissions ? (
-            <ContextMenuItem
-              onSelect={() =>
-                onManageAccess({
-                  path: entry.path,
-                  itemName: entry.name,
-                  isDirectory: entry.isDirectory,
-                })
-              }
-            >
-              <Shield className="size-4" />
-              Manage access
-            </ContextMenuItem>
-          ) : null}
-          <TagManager
-            connectionId={connectionId}
-            path={entry.path}
-            currentTagIds={tags.map((tag) => tag.id)}
-            trigger={
-              <ContextMenuItem
-                onSelect={(event) => {
-                  event.preventDefault()
-                }}
-              >
-                <Tag className="size-4" />
-                Tags
-              </ContextMenuItem>
-            }
-          />
-          {canWrite ? (
-            <>
-              <ContextMenuSeparator />
-              {entry.isDirectory ? (
-                <ContextMenuItem onSelect={() => openCustomize(entry)}>
-                  <FolderCog className="size-4" />
-                  Customize
-                </ContextMenuItem>
-              ) : null}
-
-              <ContextMenuItem onSelect={() => openRename(entry)}>
-                <Pencil className="size-4" />
-                Rename
-              </ContextMenuItem>
-              <ContextMenuItem
-                variant="destructive"
-                onSelect={() => setDeleteTarget(entry)}
-              >
-                <Trash2 className="size-4" />
-                Delete
-              </ContextMenuItem>
-            </>
-          ) : null}
-        </ContextMenuContent>
+        <ContextMenuTrigger asChild>
+          <div {...getEntryWrapperProps(entry)}>{inner}</div>
+        </ContextMenuTrigger>
+        {renderContextMenu(entry, tags)}
       </ContextMenu>
     )
   }
 
-  const listCombined = useMemo(
-    () => [...sortedFolders, ...sortedFiles],
-    [sortedFiles, sortedFolders],
-  )
   const [scrollElement, setScrollElement] = useState<
     Element | (Window & typeof globalThis) | null
   >(null)
@@ -884,17 +912,169 @@ export function FileList({
       }
 
       return (
-        <div key={key} style={style} className="h-16 px-1 py-1">
+        <div
+          key={key}
+          style={style}
+          className="h-[64px] overflow-hidden px-1 py-1"
+        >
           {rowForEntry(entry)}
         </div>
       )
     },
-    [listCombined],
+    [listCombined, rowForEntry],
+  )
+
+  const moveSelection = useCallback(
+    (nextIndex: number) => {
+      const clamped = Math.max(0, Math.min(listCombined.length - 1, nextIndex))
+      const entry = listCombined[clamped]
+      if (!entry) {
+        return
+      }
+
+      onSelectedPathChange(entry.path)
+      const nextElement = entryRefs.current.get(entry.path)
+      nextElement?.focus({ preventScroll: true })
+    },
+    [listCombined, onSelectedPathChange],
+  )
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (
+        event.target !== event.currentTarget &&
+        isEntryActionTarget(event.target)
+      ) {
+        return
+      }
+
+      if (listCombined.length === 0) {
+        if (event.key === 'Escape' && inspectorOpen) {
+          event.preventDefault()
+          onInspectorOpenChange(false)
+        }
+        return
+      }
+
+      if (event.key === 'Enter') {
+        if (selectedIndex < 0) {
+          return
+        }
+        event.preventDefault()
+        const entry = listCombined[selectedIndex]
+        if (entry) {
+          openEntry(entry)
+        }
+        return
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (selectedPath) {
+          onSelectedPathChange(null)
+          return
+        }
+        if (inspectorOpen) {
+          onInspectorOpenChange(false)
+        }
+        return
+      }
+
+      if (event.key === 'Home') {
+        event.preventDefault()
+        moveSelection(0)
+        return
+      }
+
+      if (event.key === 'End') {
+        event.preventDefault()
+        moveSelection(listCombined.length - 1)
+        return
+      }
+
+      const gridStep = Math.max(1, gridColumnsRef.current)
+      const initialIndex = getInitialSelectionIndex(
+        event.key,
+        listCombined.length,
+        viewMode,
+      )
+      const currentIndex = selectedIndex >= 0 ? selectedIndex : initialIndex
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault()
+          moveSelection(
+            selectedIndex >= 0
+              ? currentIndex + (viewMode === 'grid' ? gridStep : 1)
+              : initialIndex,
+          )
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          moveSelection(
+            selectedIndex >= 0
+              ? currentIndex - (viewMode === 'grid' ? gridStep : 1)
+              : initialIndex,
+          )
+          break
+        case 'ArrowRight':
+          if (viewMode !== 'grid') {
+            return
+          }
+          event.preventDefault()
+          moveSelection(selectedIndex >= 0 ? currentIndex + 1 : initialIndex)
+          break
+        case 'ArrowLeft':
+          if (viewMode !== 'grid') {
+            return
+          }
+          event.preventDefault()
+          moveSelection(selectedIndex >= 0 ? currentIndex - 1 : initialIndex)
+          break
+        default:
+          break
+      }
+    },
+    [
+      inspectorOpen,
+      listCombined,
+      moveSelection,
+      onInspectorOpenChange,
+      onSelectedPathChange,
+      selectedIndex,
+      selectedPath,
+      viewMode,
+    ],
+  )
+
+  const getEntryWrapperProps = useCallback(
+    (entry: ExplorerFileEntry) => ({
+      'data-entry-path': entry.path,
+      ref: (node: HTMLDivElement | null) => {
+        if (node) {
+          entryRefs.current.set(entry.path, node)
+        } else {
+          entryRefs.current.delete(entry.path)
+        }
+      },
+      role: 'option' as const,
+      'aria-selected': entry.path === selectedPath,
+      tabIndex: entry.path === selectedPath ? 0 : -1,
+      onKeyDown: handleKeyDown,
+      onFocus: () => {
+        if (selectedPath !== entry.path) {
+          onSelectedPathChange(entry.path)
+        }
+      },
+      className: 'outline-none',
+    }),
+    [handleKeyDown, onSelectedPathChange, selectedPath],
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <SortToolbar
+        className="px-1 py-1"
         sortField={sortField}
         onSortFieldChange={setSortField}
         sortAscending={sortAscending}
@@ -909,19 +1089,19 @@ export function FileList({
             variant="outline"
             size="sm"
             aria-label="View mode"
-            className="rounded-md border-0 bg-transparent p-0.5"
+            className="rounded-sm border-0 bg-transparent p-0.5"
           >
             <ToggleGroupItem
               value="grid"
               aria-label="Grid view"
-              className="text-muted-foreground data-[state=on]:bg-accent data-[state=on]:text-foreground size-8 rounded-sm px-0"
+              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-sm px-0 shadow-none"
             >
               <LayoutGrid className="size-4" />
             </ToggleGroupItem>
             <ToggleGroupItem
               value="list"
               aria-label="List view"
-              className="text-muted-foreground data-[state=on]:bg-accent data-[state=on]:text-foreground size-8 rounded-sm px-0"
+              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-sm px-0 shadow-none"
             >
               <List className="size-4" />
             </ToggleGroupItem>
@@ -930,14 +1110,14 @@ export function FileList({
       />
 
       {entries.length === 0 ? (
-        <div className="flex min-h-[min(50vh,18rem)] flex-col items-center justify-center px-4 py-12 text-center">
-          <div className="bg-muted/60 mb-4 flex items-center justify-center rounded-2xl p-4">
+        <div className="bg-muted/35 flex min-h-[min(50vh,18rem)] flex-col items-center justify-center rounded-sm px-4 py-12 text-center">
+          <div className="bg-background/65 mb-4 flex items-center justify-center rounded-sm p-4">
             <FolderIcon
-              className="text-muted-foreground/60 size-10"
+              className="text-muted-foreground/70 size-10"
               strokeWidth={1.25}
             />
           </div>
-          <p className="text-foreground mt-2 text-base font-medium">
+          <p className="text-foreground mt-2 text-base font-semibold">
             This folder is empty
           </p>
           <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
@@ -947,18 +1127,42 @@ export function FileList({
           </p>
         </div>
       ) : (
-        <div className={cn('relative min-h-80', viewMode === 'list' && 'pt-2')}>
+        <div
+          ref={interactionRef}
+          tabIndex={0}
+          role="listbox"
+          aria-label="Files and folders"
+          onKeyDown={handleKeyDown}
+          className={cn(
+            'min-h-80 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_20%,transparent)]',
+            viewMode === 'list' && 'pt-2',
+          )}
+        >
+          <div className="mb-3 flex items-center justify-between gap-3 px-1">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <span className="bg-muted rounded-sm px-2 py-1 font-medium">
+                {entries.length} {entries.length === 1 ? 'item' : 'items'}
+              </span>
+              <span>
+                {selectedPath
+                  ? 'Single click selects, double click opens'
+                  : 'Use arrow keys to move between items'}
+              </span>
+            </div>
+          </div>
+
           {viewMode === 'list' ? (
-            <div className="text-muted-foreground mb-2 grid grid-cols-[1fr_auto] items-center px-3 text-xs">
+            <div className="text-muted-foreground mb-2 grid grid-cols-[1fr_auto] items-center px-4 text-[0.72rem] font-medium tracking-[0.08em] uppercase">
               <span>Name</span>
               <div className="flex items-center gap-4">
                 <span className="hidden min-w-28 text-right md:block">
-                  Date modified
+                  Modified
                 </span>
-                <span className="min-w-16 text-right">File size</span>
+                <span className="min-w-16 text-right">Size</span>
               </div>
             </div>
           ) : null}
+
           {scrollElement ? (
             <WindowScroller scrollElement={scrollElement}>
               {({
@@ -972,6 +1176,7 @@ export function FileList({
                   <AutoSizer disableHeight>
                     {({ width }) => {
                       const columns = resolveGridColumns(width)
+                      gridColumnsRef.current = columns
 
                       if (viewMode === 'grid') {
                         const folderRows: ExplorerFileEntry[][] = []
@@ -1076,7 +1281,7 @@ export function FileList({
                               <div
                                 key={key}
                                 style={style}
-                                className="text-muted-foreground px-2 pt-2 text-xs font-medium"
+                                className="text-muted-foreground px-2 pt-2 text-[0.72rem] font-semibold tracking-[0.08em] uppercase"
                               >
                                 {row.title}
                               </div>

@@ -41,7 +41,7 @@ export function FilePreview({
     return (
       <aside
         className={cn(
-          'border-border bg-card flex w-full min-w-[min(100%,18rem)] flex-col gap-4 rounded-lg border p-4 text-sm lg:w-[20rem]',
+          'border-border bg-card flex w-full min-w-[min(100%,18rem)] flex-col gap-4 rounded-sm border p-4 text-sm lg:w-[20rem]',
           className,
         )}
       >
@@ -56,13 +56,13 @@ export function FilePreview({
   return (
     <aside
       className={cn(
-        'border-border bg-card flex w-full min-w-[min(100%,18rem)] flex-col gap-4 rounded-lg border p-4 lg:w-[20rem]',
+        'border-border bg-card flex w-full min-w-[min(100%,18rem)] flex-col gap-4 rounded-sm border p-4 lg:w-[20rem]',
         className,
       )}
     >
       <p className="text-foreground text-sm font-medium">Details</p>
 
-      <div className="border-border relative aspect-[4/3] w-full overflow-hidden rounded-md border bg-[#f8f9fa] dark:bg-white/5">
+      <div className="border-border relative aspect-[4/3] w-full overflow-hidden rounded-sm border bg-[#f8f9fa] dark:bg-white/5">
         {showImage ? (
           <img src={src} alt="" className="size-full object-contain" />
         ) : (

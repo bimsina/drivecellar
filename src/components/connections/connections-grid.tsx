@@ -61,10 +61,10 @@ function sortConnections(
 function LoadingState() {
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="border-border flex items-center justify-end gap-2 border-b pb-2">
-        <Skeleton className="h-9 w-9 rounded-md" />
-        <Skeleton className="h-9 w-28 rounded-md" />
-        <Skeleton className="h-9 w-9 rounded-md" />
+      <div className="flex items-center justify-end gap-2 rounded-sm bg-transparent px-3 py-2">
+        <Skeleton className="h-9 w-9 rounded-sm" />
+        <Skeleton className="h-9 w-28 rounded-sm" />
+        <Skeleton className="h-9 w-9 rounded-sm" />
       </div>
       <Skeleton className="h-4 w-24 rounded" />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -73,7 +73,7 @@ function LoadingState() {
             key={index}
             className="flex flex-col items-center gap-3 px-2 py-4"
           >
-            <Skeleton className="size-[5.5rem] rounded-2xl" />
+            <Skeleton className="size-[5.5rem] rounded-sm" />
             <Skeleton className="h-4 w-full max-w-[8rem] rounded" />
           </div>
         ))}
@@ -106,7 +106,7 @@ export function ConnectionsGrid({
   }
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-4">
       {errorMessage ? (
         <Alert variant="destructive">
           <AlertTitle>Could not load storage</AlertTitle>
@@ -115,8 +115,8 @@ export function ConnectionsGrid({
       ) : null}
 
       {connections.length === 0 ? (
-        <div className="flex min-h-[min(60vh,24rem)] flex-col items-center justify-center px-4 py-16 text-center">
-          <div className="text-muted-foreground">
+        <div className="bg-muted/35 flex min-h-[min(60vh,24rem)] flex-col items-center justify-center rounded-sm px-4 py-16 text-center">
+          <div className="text-muted-foreground border-border/70 bg-background/70 rounded-sm border p-4">
             <Folder className="mx-auto size-12" strokeWidth={1.25} />
           </div>
           <h2 className="text-foreground mt-6 text-base font-medium">
@@ -130,7 +130,7 @@ export function ConnectionsGrid({
           {canManageConnections ? (
             <Button
               type="button"
-              className="mt-6 h-9 rounded-md px-4 font-medium"
+              className="mt-6 h-9 rounded-sm px-4 font-medium"
               onClick={onCreate}
             >
               <Plus className="mr-2 size-4" />
@@ -139,32 +139,26 @@ export function ConnectionsGrid({
           ) : null}
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-6">
-          <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b pt-1 pb-2">
-            {canManageConnections ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-border text-foreground hover:bg-accent h-9 rounded-md bg-transparent px-3 font-normal"
-                onClick={onCreate}
-              >
-                <Plus className="text-primary mr-2 size-4" />
-                New
-              </Button>
-            ) : null}
+        <div className="flex w-full flex-col gap-5">
+          <div className="flex flex-col gap-3 px-1 py-1">
             <SortToolbar
-              className="flex-1 border-0 pb-0"
+              className="px-1 py-1"
               sortField={sortField}
               onSortFieldChange={setSortField}
               sortAscending={sortAscending}
               onToggleSortDirection={() => setSortAscending((v) => !v)}
               allowedSortFields={['name', 'modified']}
-              menuItems={
+              trailing={
                 canManageConnections ? (
-                  <DropdownMenuItem onClick={onCreate}>
-                    <Plus className="size-4" />
-                    New storage
-                  </DropdownMenuItem>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-sm px-3"
+                    onClick={onCreate}
+                  >
+                    <Plus className="text-primary mr-2 size-4" />
+                    Add storage
+                  </Button>
                 ) : undefined
               }
             />
@@ -214,37 +208,35 @@ function ConnectionTile({
         to="/c/$id"
         params={{ id: connection.id }}
         className={cn(
-          'flex min-h-40 flex-col items-center gap-3 rounded-2xl px-4 py-5 text-center transition-colors duration-150',
-          'text-foreground hover:bg-muted/60 focus-visible:ring-ring outline-none focus-visible:ring-2',
+          'flex min-h-32 flex-col items-start gap-4 rounded-sm px-5 py-5 text-left transition-[background-color] duration-150',
+          'text-foreground hover:bg-muted/28 focus-visible:ring-ring outline-none focus-visible:ring-2',
         )}
       >
-        <>
-          <span
-            className={cn(
-              'bg-primary/10 text-primary border-primary/20 flex size-[5.5rem] shrink-0 items-center justify-center rounded-2xl border',
-            )}
-            style={getPaletteIconBadgeStyle(connection.color)}
-          >
-            <DynamicIcon
-              value={connection.icon}
-              fallback={
-                <HardDrive className="size-12" strokeWidth={1.5} aria-hidden />
-              }
-              className="size-12"
-              size={48}
-            />
+        <span
+          className={cn(
+            'text-primary flex size-[4.4rem] shrink-0 items-center justify-center',
+          )}
+          style={getPaletteIconBadgeStyle(connection.color)}
+        >
+          <DynamicIcon
+            value={connection.icon}
+            fallback={
+              <HardDrive className="size-10" strokeWidth={1.5} aria-hidden />
+            }
+            className="size-10"
+            size={40}
+          />
+        </span>
+        <span className="w-full min-w-0">
+          <span className="line-clamp-2 text-base leading-snug font-semibold">
+            {connection.name}
           </span>
-          <span className="w-full min-w-0 px-1">
-            <span className="line-clamp-2 text-sm leading-snug font-medium">
-              {connection.name}
+          {connection.description ? (
+            <span className="text-muted-foreground mt-2 line-clamp-2 text-sm leading-relaxed">
+              {connection.description}
             </span>
-            {connection.description ? (
-              <span className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
-                {connection.description}
-              </span>
-            ) : null}
-          </span>
-        </>
+          ) : null}
+        </span>
       </Link>
       {canManageConnections ? (
         <DropdownMenu>

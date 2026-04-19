@@ -82,7 +82,7 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
   if (shareQuery.isError) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-xl items-center justify-center px-4 py-12">
-        <Card className="w-full space-y-4 p-6">
+        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 w-full space-y-4 rounded-sm p-6 supports-[backdrop-filter]:backdrop-blur-xl">
           <div>
             <h1 className="text-xl font-semibold">Shared link unavailable</h1>
             <p className="text-muted-foreground mt-2 text-sm">
@@ -115,9 +115,11 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
-      <header className="space-y-2">
-        <p className="text-muted-foreground text-sm">DriveCellar shared link</p>
-        <h1 className="text-2xl font-semibold">
+      <header className="bg-card/80 supports-[backdrop-filter]:bg-card/70 space-y-2 rounded-sm px-6 py-6 supports-[backdrop-filter]:backdrop-blur-xl">
+        <p className="text-muted-foreground text-[0.72rem] font-semibold tracking-[0.14em] uppercase">
+          DriveCellar shared link
+        </p>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em]">
           {data.entry.name || 'Shared root'}
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -131,7 +133,7 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
       </header>
 
       {data.isDirectory ? (
-        <Card className="overflow-hidden">
+        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 overflow-hidden rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
           <div className="border-b px-4 py-3">
             <h2 className="font-medium">Files</h2>
           </div>
@@ -189,7 +191,7 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
           </div>
         </Card>
       ) : (
-        <Card className="flex items-center justify-between gap-4 p-6">
+        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex items-center justify-between gap-4 rounded-sm p-6 supports-[backdrop-filter]:backdrop-blur-xl">
           <div>
             <h2 className="font-medium">{data.entry.name}</h2>
             <p className="text-muted-foreground text-sm">

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { FolderPlus, Shield, Upload } from 'lucide-react'
+import { FolderPlus, Info, Shield, Upload } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -18,9 +18,11 @@ import { useTRPC } from '#/integrations/trpc/react'
 import type { FileEntry } from '#/lib/storage/types'
 import { normalizePath } from '#/lib/storage/path-utils'
 import type { TagListItem } from '#/lib/tags.ts'
+import { cn } from '#/lib/utils'
 
 import { ExplorerBreadcrumb } from './breadcrumb-nav'
 import { CreateFolderDialog } from './create-folder-dialog'
+import { FileInspector } from './file-inspector'
 import { FileList, type FileListViewMode } from './file-list'
 import { PathAccessDialog } from './path-access-dialog'
 import { UploadButton } from './upload-button'
@@ -139,6 +141,8 @@ export function FileExplorer({
   const [uploads, dispatchUpload] = useReducer(uploadQueueReducer, [])
   const [queueExpanded, setQueueExpanded] = useState(false)
   const [isDragActive, setIsDragActive] = useState(false)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [manageAccessTarget, setManageAccessTarget] = useState<{
     path: string
     itemName: string
@@ -185,6 +189,10 @@ export function FileExplorer({
     () => listPages.flatMap((page) => page.entries),
     [listPages],
   )
+  const selectedEntry = useMemo(
+    () => entries.find((entry) => entry.path === selectedPath) ?? null,
+    [entries, selectedPath],
+  )
   const tagsForFilesQuery = useQuery(
     trpc.tags.listForFiles.queryOptions(
       {
@@ -221,6 +229,7 @@ export function FileExplorer({
     setNextCursor(null)
     setHasMoreEntries(false)
     setIsLoadingMoreEntries(false)
+    setSelectedPath(null)
   }, [connectionId, normalizedPath])
 
   useEffect(() => {
@@ -474,7 +483,74 @@ export function FileExplorer({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 px-1 py-1 lg:px-1">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-foreground text-lg font-semibold">
+                      {normalizedPath === '/'
+                        ? connectionName
+                        : itemNameFromPath(normalizedPath, connectionName)}
+                    </h1>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={inspectorOpen ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="h-9 rounded-sm px-3"
+                      onMouseDown={(event) => {
+                        event.preventDefault()
+                      }}
+                      onClick={() => setInspectorOpen((open) => !open)}
+                    >
+                      <Info className="size-4" />
+                      Details
+                    </Button>
+                    {canManagePermissions ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-sm px-3"
+                        onClick={() => {
+                          setManageAccessTarget({
+                            path: normalizedPath,
+                            itemName:
+                              normalizedPath === '/'
+                                ? `${connectionName} root`
+                                : itemNameFromPath(
+                                    normalizedPath,
+                                    connectionName,
+                                  ),
+                            isDirectory: true,
+                          })
+                        }}
+                      >
+                        <Shield className="size-4" />
+                        Manage access
+                      </Button>
+                    ) : null}
+                    {canWriteCurrentPath ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-sm px-3"
+                          onClick={() => setCreateFolderOpen(true)}
+                        >
+                          <FolderPlus className="size-4" />
+                          New folder
+                        </Button>
+                        <UploadButton
+                          onSelectFiles={handleSelectedFiles}
+                          onSelectFolder={handleSelectedFiles}
+                        />
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
                 <div className="min-w-0 flex-1">
                   <ExplorerBreadcrumb
                     connectionId={connectionId}
@@ -483,111 +559,88 @@ export function FileExplorer({
                     onNavigate={onPathChange}
                   />
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {canManagePermissions ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
-                      onClick={() => {
-                        setManageAccessTarget({
-                          path: normalizedPath,
-                          itemName:
-                            normalizedPath === '/'
-                              ? `${connectionName} root`
-                              : itemNameFromPath(
-                                  normalizedPath,
-                                  connectionName,
-                                ),
-                          isDirectory: true,
-                        })
-                      }}
-                    >
-                      <Shield className="size-4" />
-                      Manage access
-                    </Button>
-                  ) : null}
-                  {canWriteCurrentPath ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
-                        onClick={() => setCreateFolderOpen(true)}
-                      >
-                        <FolderPlus className="size-4" />
-                        New folder
-                      </Button>
-                      <UploadButton
-                        onSelectFiles={handleSelectedFiles}
-                        onSelectFolder={handleSelectedFiles}
-                      />
-                    </>
-                  ) : null}
-                </div>
               </div>
             </div>
             <div
-              ref={listScrollContainerRef}
-              className="relative min-h-0 flex-1 overflow-auto px-0 py-0 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
-            >
-              {firstPageQuery.isPending ? (
-                <div className="space-y-4">
-                  <div className="flex justify-end gap-2 pb-2">
-                    <Skeleton className="h-9 w-9 rounded-md" />
-                    <Skeleton className="h-9 w-28 rounded-md" />
-                  </div>
-                  <Skeleton className="h-4 w-20 rounded" />
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <Skeleton key={i} className="h-11 rounded-lg" />
-                    ))}
-                  </div>
-                </div>
-              ) : firstPageQuery.isError ? (
-                <div className="flex h-full min-h-56 items-center justify-center rounded-lg p-6 text-center">
-                  <p className="text-destructive text-sm">
-                    {firstPageQuery.error?.message ?? 'Could not load files.'}
-                  </p>
-                </div>
-              ) : (
-                <FileList
-                  connectionId={connectionId}
-                  currentPath={normalizedPath}
-                  canWriteCurrentPath={canWriteCurrentPath}
-                  canManagePermissions={canManagePermissions}
-                  entries={entries}
-                  hasMoreEntries={hasMoreEntries}
-                  isLoadingMoreEntries={isLoadingMoreEntries}
-                  onLoadMoreEntries={loadMoreEntries}
-                  scrollContainerRef={listScrollContainerRef}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  onNavigate={onPathChange}
-                  onOpenFile={onOpenFile}
-                  onManageAccess={setManageAccessTarget}
-                  tagsByPath={tagsByPath}
-                />
+              className={cn(
+                'grid min-h-0 flex-1 gap-4',
+                inspectorOpen && 'lg:grid-cols-[minmax(0,1fr)_22rem]',
               )}
-
-              {canWriteCurrentPath && isDragActive ? (
-                <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 border-2 border-dashed p-5 backdrop-blur-sm">
-                  <div className="flex h-full flex-col items-center justify-center text-center">
-                    <div className="bg-primary/10 text-primary rounded-full p-4">
-                      <Upload className="size-6" />
+            >
+              <div
+                ref={listScrollContainerRef}
+                className="relative min-h-0 overflow-auto px-1 py-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
+              >
+                {firstPageQuery.isPending ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-end gap-2 pb-2">
+                      <Skeleton className="h-9 w-9 rounded-sm" />
+                      <Skeleton className="h-9 w-28 rounded-sm" />
                     </div>
-                    <p className="text-foreground mt-4 text-base font-medium">
-                      Drop files or folders to upload
-                    </p>
-                    <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
-                      Folder structure stays intact, and conflicts are safely
-                      renamed instead of overwritten.
+                    <Skeleton className="h-4 w-20 rounded" />
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <Skeleton key={i} className="h-11 rounded-sm" />
+                      ))}
+                    </div>
+                  </div>
+                ) : firstPageQuery.isError ? (
+                  <div className="flex h-full min-h-56 items-center justify-center rounded-sm p-6 text-center">
+                    <p className="text-destructive text-sm">
+                      {firstPageQuery.error?.message ?? 'Could not load files.'}
                     </p>
                   </div>
-                </div>
-              ) : null}
+                ) : (
+                  <FileList
+                    connectionId={connectionId}
+                    currentPath={normalizedPath}
+                    canWriteCurrentPath={canWriteCurrentPath}
+                    canManagePermissions={canManagePermissions}
+                    entries={entries}
+                    hasMoreEntries={hasMoreEntries}
+                    isLoadingMoreEntries={isLoadingMoreEntries}
+                    onLoadMoreEntries={loadMoreEntries}
+                    scrollContainerRef={listScrollContainerRef}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onNavigate={onPathChange}
+                    onOpenFile={onOpenFile}
+                    onManageAccess={setManageAccessTarget}
+                    tagsByPath={tagsByPath}
+                    selectedPath={selectedPath}
+                    onSelectedPathChange={setSelectedPath}
+                    inspectorOpen={inspectorOpen}
+                    onInspectorOpenChange={setInspectorOpen}
+                  />
+                )}
+
+                {canWriteCurrentPath && isDragActive ? (
+                  <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 border-2 border-dashed p-5 backdrop-blur-sm">
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <div className="bg-primary/10 text-primary rounded-sm p-4">
+                        <Upload className="size-6" />
+                      </div>
+                      <p className="text-foreground mt-4 text-base font-medium">
+                        Drop files or folders to upload
+                      </p>
+                      <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
+                        Folder structure stays intact, and conflicts are safely
+                        renamed instead of overwritten.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <FileInspector
+                open={inspectorOpen}
+                onOpenChange={setInspectorOpen}
+                connectionId={connectionId}
+                connectionName={connectionName}
+                currentPath={normalizedPath}
+                currentAccess={myAccessQuery.data?.access}
+                selectedEntry={selectedEntry}
+              />
             </div>
           </div>
 

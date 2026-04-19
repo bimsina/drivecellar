@@ -104,8 +104,8 @@ export function FileDetailView({
 
   if (!entry || entry.isDirectory) {
     return (
-      <div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
-        <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-3 sm:px-4">
+      <div className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
+        <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-4 sm:px-5">
           <div className="min-w-0 flex-1 pr-2">
             <h1 className="text-foreground text-left text-base leading-snug font-semibold break-all sm:text-lg">
               {fallbackNameForPath(requestedPath)}
@@ -143,8 +143,8 @@ export function FileDetailView({
   const showText = isTextPreviewable(entry)
 
   return (
-    <div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
-      <div className="border-border flex shrink-0 flex-col gap-1 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+    <div className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
+      <div className="border-border flex shrink-0 flex-col gap-1 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
         <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
           <div className="min-w-0 flex-1 pr-2">
             <h1 className="text-foreground text-left text-base leading-snug font-semibold break-all sm:text-lg">
@@ -205,7 +205,7 @@ export function FileDetailView({
             ) : textError ? (
               <p className="text-destructive text-sm">{textError}</p>
             ) : textBody != null ? (
-              <pre className="text-foreground border-border bg-background min-h-0 flex-1 overflow-auto rounded-md border p-4 text-xs leading-relaxed wrap-break-word whitespace-pre-wrap sm:text-sm">
+              <pre className="text-foreground border-border bg-background min-h-0 flex-1 overflow-auto rounded-sm border p-4 text-xs leading-relaxed wrap-break-word whitespace-pre-wrap sm:text-sm">
                 {textBody}
               </pre>
             ) : null}

@@ -351,10 +351,18 @@ export function ConnectionIndexingPage({
 
   return (
     <main className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex flex-wrap items-center justify-between gap-3 rounded-sm px-5 py-5 supports-[backdrop-filter]:backdrop-blur-xl">
         <div className="space-y-1">
-          <h1 className="text-foreground text-lg font-medium">Indexing</h1>
-          <p className="text-muted-foreground text-sm">{connection.name}</p>
+          <p className="text-muted-foreground text-[0.72rem] font-semibold tracking-[0.14em] uppercase">
+            Indexing
+          </p>
+          <h1 className="text-foreground text-[1.45rem] font-semibold tracking-[-0.03em]">
+            {connection.name}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Keep search and file browsing fast by refreshing the index for this
+            connection.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -394,7 +402,7 @@ export function ConnectionIndexingPage({
       </div>
 
       {isIndexing ? (
-        <Card>
+        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
           <CardHeader>
             <CardTitle>Active run progress</CardTitle>
             <CardDescription>
@@ -425,7 +433,7 @@ export function ConnectionIndexingPage({
         </Card>
       ) : null}
 
-      <Card>
+      <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
         <CardHeader>
           <CardTitle>Current status</CardTitle>
           <CardDescription>
@@ -477,7 +485,7 @@ export function ConnectionIndexingPage({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
         <CardHeader>
           <CardTitle>Index runs</CardTitle>
           <CardDescription>

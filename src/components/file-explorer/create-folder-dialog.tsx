@@ -122,7 +122,7 @@ export function CreateFolderDialog({
               Customize
             </button>
             {showCustomize ? (
-              <div className="space-y-3 rounded-md border p-3">
+              <div className="space-y-3 rounded-sm border p-3">
                 <div className="space-y-2">
                   <Label>Color</Label>
                   <ColorPicker value={color} onChange={setColor} />

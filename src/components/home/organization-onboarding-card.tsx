@@ -94,17 +94,17 @@ export function OrganizationOnboardingCard({
   })
 
   return (
-    <Card className="border-border bg-card w-full max-w-xl rounded-[2rem] border p-2">
+    <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 w-full max-w-xl rounded-sm border p-3 supports-[backdrop-filter]:backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary rounded-[1rem] p-2">
+          <div className="bg-primary/10 text-primary border-primary/10 rounded-sm border p-2.5">
             <Building2 className="size-5" aria-hidden />
           </div>
           <div>
             <p className="text-muted-foreground text-[0.73rem] font-bold tracking-[0.16em] uppercase">
               Workspace Setup
             </p>
-            <CardTitle className="text-foreground mt-1 text-3xl leading-none">
+            <CardTitle className="text-foreground mt-1 text-3xl leading-none tracking-[-0.04em]">
               Create or join a team
             </CardTitle>
           </div>
@@ -228,7 +228,7 @@ export function OrganizationOnboardingCard({
           </form.Subscribe>
         </form>
 
-        <div className="border-border bg-muted/40 text-muted-foreground flex items-start gap-2 rounded-[1.25rem] border p-4 text-sm">
+        <div className="bg-muted/35 text-muted-foreground flex items-start gap-2 rounded-sm p-4 text-sm">
           <Users className="mt-0.5 size-4 shrink-0" aria-hidden />
           <p>
             If someone invited you to an existing team, accept the Better Auth

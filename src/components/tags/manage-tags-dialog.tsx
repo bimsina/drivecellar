@@ -176,7 +176,7 @@ export function ManageTagsDialog({
           <ScrollArea className="max-h-[min(60vh,34rem)] px-3 pb-3">
             <div className="space-y-2 p-2">
               {filteredTags.length === 0 ? (
-                <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-center text-sm">
+                <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center gap-2 rounded-sm border border-dashed text-center text-sm">
                   <TagIcon className="size-5" />
                   <p>No tags match this search.</p>
                 </div>
@@ -190,7 +190,7 @@ export function ManageTagsDialog({
                     <div
                       key={tag.id}
                       className={cn(
-                        'rounded-2xl border px-3 py-3 transition-colors',
+                        'rounded-sm border px-3 py-3 transition-colors',
                         isEditing
                           ? 'border-border/80 bg-muted/35'
                           : 'hover:bg-muted/35 border-transparent',

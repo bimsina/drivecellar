@@ -566,14 +566,14 @@ function OptionGridField<TValue extends string>({
               aria-pressed={selected}
               onClick={() => onChange(option.value)}
               className={cn(
-                'border-border/70 bg-background/70 hover:border-border hover:bg-accent/40 flex min-h-24 w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors',
+                'border-border/70 bg-background/70 hover:border-border hover:bg-accent/40 flex min-h-24 w-full items-start gap-3 rounded-sm border p-4 text-left transition-colors',
                 selected &&
                   'border-primary/60 bg-primary/8 ring-primary/20 ring-2',
               )}
             >
               <div
                 className={cn(
-                  'bg-muted text-muted-foreground mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                  'bg-muted text-muted-foreground mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-sm border',
                   selected &&
                     'bg-primary text-primary-foreground border-primary/70',
                 )}
@@ -667,7 +667,7 @@ function PathStyleField({ form }: { form: ConnectionFormApi }) {
     <form.Field name="config.pathStyle">
       {(field) => (
         <div className="md:col-span-2">
-          <div className="border-border/70 bg-card/80 flex items-center justify-between rounded-3xl border px-4 py-3">
+          <div className="border-border/70 bg-card/80 flex items-center justify-between rounded-sm border px-4 py-3">
             <div className="space-y-1">
               <Label htmlFor={field.name}>Path-style requests</Label>
               <p className="text-muted-foreground text-sm">
@@ -933,7 +933,7 @@ export function ConnectionFormDialog({
               {(config) => (
                 <section
                   key={config.type}
-                  className="border-border/70 bg-background/80 space-y-4 rounded-3xl border p-4"
+                  className="border-border/70 bg-background/80 space-y-4 rounded-sm border p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>

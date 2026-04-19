@@ -20,8 +20,8 @@ export function AppShell({ children, variant = 'default' }: AppShellProps) {
         className={cn(
           'mx-auto flex w-full flex-1',
           wide
-            ? 'max-w-[100%] px-4 pt-3 pb-6 md:px-6 lg:px-8'
-            : 'max-w-[1600px] px-4 pt-5 pb-6 md:px-6 lg:px-8',
+            ? 'max-w-[100%] px-4 pt-4 pb-8 md:px-6 lg:px-8'
+            : 'max-w-[1560px] px-4 pt-5 pb-8 md:px-6 lg:px-8',
         )}
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>

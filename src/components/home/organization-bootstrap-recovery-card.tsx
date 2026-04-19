@@ -21,10 +21,10 @@ export function OrganizationBootstrapRecoveryCard({
   onRetry,
 }: OrganizationBootstrapRecoveryCardProps) {
   return (
-    <Card className="border-border bg-card w-full max-w-xl rounded-[2rem] border p-2">
+    <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 w-full max-w-xl rounded-sm border p-3 supports-[backdrop-filter]:backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="rounded-[1rem] bg-amber-500/12 p-2 text-amber-600 dark:text-amber-300">
+          <div className="rounded-sm bg-amber-500/12 p-2 text-amber-600 dark:text-amber-300">
             <AlertTriangle className="size-5" aria-hidden />
           </div>
           <div>
@@ -43,7 +43,7 @@ export function OrganizationBootstrapRecoveryCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="bg-muted/50 text-muted-foreground rounded-[1.25rem] border border-dashed p-4 text-sm leading-6">
+        <div className="bg-muted/35 text-muted-foreground rounded-sm border border-dashed p-4 text-sm leading-6">
           {errorMessage}
         </div>
 

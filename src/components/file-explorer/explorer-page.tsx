@@ -29,7 +29,7 @@ export function ExplorerPage({ connectionId, path }: ExplorerPageProps) {
   function handlePathChange(nextPath: string) {
     void navigate({
       ...getExplorerRouteTarget(connectionId, nextPath),
-      replace: true,
+      replace: false,
     })
   }
 

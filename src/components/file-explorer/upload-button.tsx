@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
+
 type UploadButtonProps = {
   disabled?: boolean
   onSelectFiles: (files: File[]) => void
@@ -72,7 +73,7 @@ export function UploadButton({
             type="button"
             variant="outline"
             size="sm"
-            className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-md px-3 font-normal"
+            className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-sm px-3 font-normal"
             disabled={disabled}
           >
             <Upload className="size-4" />

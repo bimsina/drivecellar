@@ -30,17 +30,17 @@ export function OrganizationChoiceCard({
   onSelect,
 }: OrganizationChoiceCardProps) {
   return (
-    <Card className="border-border bg-card w-full max-w-4xl rounded-[2rem] border p-2">
+    <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 w-full max-w-4xl rounded-sm border p-3 supports-[backdrop-filter]:backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary rounded-[1rem] p-2">
+          <div className="bg-primary/10 text-primary border-primary/10 rounded-sm border p-2.5">
             <Building2 className="size-5" aria-hidden />
           </div>
           <div>
             <p className="text-muted-foreground text-[0.73rem] font-bold tracking-[0.16em] uppercase">
               Team Selection
             </p>
-            <CardTitle className="text-foreground mt-1 text-3xl leading-none">
+            <CardTitle className="text-foreground mt-1 text-3xl leading-none tracking-[-0.04em]">
               Choose a team to enter
             </CardTitle>
           </div>
@@ -63,10 +63,10 @@ export function OrganizationChoiceCard({
           {organizations.map((organization) => (
             <div
               key={organization.id}
-              className="border-border bg-muted/30 flex flex-col gap-4 rounded-[1.5rem] border p-5"
+              className="bg-muted/35 flex flex-col gap-4 rounded-sm p-5"
             >
               <div className="flex items-start gap-3">
-                <div className="bg-primary/10 text-primary rounded-xl p-2">
+                <div className="bg-primary/10 text-primary border-primary/10 rounded-sm border p-2">
                   <Building2 className="size-5" aria-hidden />
                 </div>
                 <div className="min-w-0">

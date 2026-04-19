@@ -28,7 +28,7 @@ export function TagChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium',
+        'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 font-medium',
         size === 'sm' ? 'min-h-4 text-[10px]' : 'min-h-5 text-xs',
         onRemove && 'pr-0.5',
         className,
@@ -41,7 +41,7 @@ export function TagChip({
       <span
         aria-hidden="true"
         className={cn(
-          'shrink-0 rounded-full border border-current/20',
+          'shrink-0 rounded-sm border border-current/20',
           size === 'sm' ? 'size-1.5' : 'size-2',
         )}
         style={getPaletteSwatchStyle(color)}
@@ -53,7 +53,7 @@ export function TagChip({
           variant="ghost"
           size="icon-xs"
           className={cn(
-            'hover:bg-foreground/8 size-4 rounded-full text-inherit shadow-none',
+            'hover:bg-foreground/8 size-4 rounded-sm text-inherit shadow-none',
             size === 'sm' && 'size-3.5',
           )}
           aria-label={removeLabel ?? `Remove ${label}`}

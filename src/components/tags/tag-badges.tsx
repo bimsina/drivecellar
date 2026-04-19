@@ -28,7 +28,7 @@ export function TagBadges({
       {overflow > 0 ? (
         <span
           className={cn(
-            'text-muted-foreground bg-muted inline-flex items-center rounded-full border border-transparent px-2 py-0.5 font-medium',
+            'text-muted-foreground bg-muted inline-flex items-center rounded-sm border border-transparent px-2 py-0.5 font-medium',
             size === 'sm' ? 'min-h-4 text-[10px]' : 'min-h-5 text-xs',
           )}
         >

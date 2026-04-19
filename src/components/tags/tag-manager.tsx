@@ -252,7 +252,7 @@ export function TagManager({
           </DialogHeader>
 
           <div className="border-border/60 bg-card/90 border-b px-3 py-3 pt-0">
-            <div className="border-border/70 bg-muted/20 rounded-2xl border p-2.5">
+            <div className="border-border/70 bg-muted/20 rounded-sm border p-2.5">
               <p className="text-muted-foreground mb-2 text-[11px] font-medium tracking-[0.16em] uppercase">
                 Assigned
               </p>
@@ -294,7 +294,7 @@ export function TagManager({
               />
 
               {canCreateTag ? (
-                <div className="border-border/70 bg-muted/20 mt-2 flex items-center gap-2 rounded-2xl border p-2">
+                <div className="border-border/70 bg-muted/20 mt-2 flex items-center gap-2 rounded-sm border p-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-muted-foreground text-[11px] font-medium tracking-[0.14em] uppercase">
                       Create
@@ -355,7 +355,7 @@ export function TagManager({
                         value={`${tag.name} ${tag.color}`}
                         data-checked={checked}
                         className={cn(
-                          'rounded-xl px-2.5 py-2',
+                          'rounded-sm px-2.5 py-2',
                           checked && 'bg-muted/40',
                         )}
                         style={getPaletteRingStyle(tag.color)}
@@ -363,7 +363,7 @@ export function TagManager({
                       >
                         <span
                           aria-hidden="true"
-                          className="size-2.5 shrink-0 rounded-full border border-current/20"
+                          className="size-2.5 shrink-0 rounded-sm border border-current/20"
                           style={getPaletteSwatchStyle(tag.color)}
                         />
                         <span className="min-w-0 flex-1 truncate">

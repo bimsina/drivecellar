@@ -286,12 +286,12 @@ export function AppHeaderSearch({
         type="button"
         variant="outline"
         size="sm"
-        className="border-border/80 bg-muted/30 text-muted-foreground hover:bg-muted/50 relative h-8 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-xl px-2.5 font-normal"
+        className="border-border/75 bg-background/85 text-muted-foreground h-10 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-sm px-3 shadow-none"
         onClick={() => setCommandOpen(true)}
       >
-        <Search className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        <Search className="size-4 shrink-0 opacity-70" aria-hidden />
         <span className="truncate">Search files & folders…</span>
-        <kbd className="bg-muted text-muted-foreground pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-md border px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
+        <kbd className="bg-muted text-muted-foreground border-border/70 pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-sm border px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
           {shortcutHint}
         </kbd>
       </Button>
@@ -324,7 +324,7 @@ export function AppHeaderSearch({
               >
                 <Filter className="size-3.5" />
                 {activeFilterCount > 0 ? (
-                  <span className="bg-primary text-primary-foreground absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full text-[9px] font-semibold">
+                  <span className="bg-primary text-primary-foreground absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-sm text-[9px] font-semibold">
                     {activeFilterCount > 9 ? '9+' : activeFilterCount}
                   </span>
                 ) : null}
@@ -362,7 +362,7 @@ export function AppHeaderSearch({
                       {(connectionsQuery.data ?? []).map((c) => (
                         <label
                           key={c.id}
-                          className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-lg px-1 py-0.5"
+                          className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-sm px-1 py-0.5"
                         >
                           <Checkbox
                             disabled={scopeLocksConnection}
@@ -400,7 +400,7 @@ export function AppHeaderSearch({
                         {tagsData?.map((tag) => (
                           <label
                             key={tag.id}
-                            className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-lg px-1 py-0.5"
+                            className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-sm px-1 py-0.5"
                           >
                             <Checkbox
                               checked={tagFilter.includes(tag.id)}
@@ -409,7 +409,7 @@ export function AppHeaderSearch({
                               }
                             />
                             <span
-                              className="size-2 shrink-0 rounded-full border"
+                              className="size-2 shrink-0 rounded-sm border"
                               style={getPaletteSwatchStyle(tag.color)}
                               aria-hidden
                             />
@@ -434,9 +434,9 @@ export function AppHeaderSearch({
                       title={label}
                       onClick={() => toggleColor(key)}
                       className={cn(
-                        'size-6 rounded-md border-2 transition-transform hover:scale-105',
+                        'size-6 rounded-sm border-2 transition-colors',
                         colorFilter.includes(key)
-                          ? 'ring-primary ring-offset-background scale-105 ring-2 ring-offset-1'
+                          ? 'ring-primary ring-offset-background ring-2 ring-offset-1'
                           : 'border-transparent',
                       )}
                       style={getPaletteSwatchStyle(key)}
@@ -470,7 +470,7 @@ export function AppHeaderSearch({
               type="button"
               size="sm"
               variant={effectiveScopeConnection ? 'secondary' : 'outline'}
-              className="h-7 gap-1 rounded-full px-2.5 text-xs font-normal"
+              className="h-7 gap-1 rounded-sm px-2.5 text-xs font-normal"
               title="Search only in the connection you are viewing"
               onClick={() => toggleScopeConnection()}
               aria-pressed={effectiveScopeConnection}
@@ -485,7 +485,7 @@ export function AppHeaderSearch({
                 type="button"
                 size="sm"
                 variant={effectiveScopeDirectory ? 'secondary' : 'outline'}
-                className="h-7 gap-1 rounded-full px-2.5 text-xs font-normal"
+                className="h-7 gap-1 rounded-sm px-2.5 text-xs font-normal"
                 title="Search under this folder (and subfolders)"
                 onClick={() => toggleScopeDirectory()}
                 aria-pressed={effectiveScopeDirectory}
@@ -527,11 +527,11 @@ export function AppHeaderSearch({
                     className="cursor-pointer"
                   >
                     <span
-                      className="mt-0.5 size-2 shrink-0 rounded-full border"
+                      className="mt-0.5 size-2 shrink-0 rounded-sm border"
                       style={getPaletteSwatchStyle(hit.color ?? undefined)}
                       aria-hidden
                     />
-                    <span className="bg-primary/10 text-primary hidden max-w-36 shrink-0 truncate rounded-md px-1.5 py-px text-[10px] font-medium sm:inline">
+                    <span className="bg-primary/10 text-primary hidden max-w-36 shrink-0 truncate rounded-sm px-1.5 py-px text-[10px] font-medium sm:inline">
                       {hit.connectionName}
                     </span>
                     <span className="min-w-0 flex-1">

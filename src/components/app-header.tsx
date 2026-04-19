@@ -1,6 +1,6 @@
 import { OrganizationSwitcher, UserButton } from '@daveyplate/better-auth-ui'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Building2, ChevronsUpDown, HardDrive } from 'lucide-react'
+import { Building2, ChevronsUpDown, HardDrive, Search } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { authClient } from '#/lib/auth-client'
@@ -31,40 +31,49 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   return (
     <header
       className={cn(
-        'bg-background sticky top-0 z-50 px-4 md:px-6 lg:px-8',
-        wide ? 'pt-3 pb-0' : 'pt-4',
+        'sticky top-0 z-50 px-4 pt-3 md:px-6 lg:px-8',
+        wide ? 'pb-1' : 'pb-3',
         className,
       )}
     >
       <div
         className={cn(
-          'mx-auto flex w-full items-center justify-between gap-3 py-3',
-          wide ? 'max-w-[100%]' : 'max-w-[1600px] rounded-xl px-4 sm:px-5',
+          'bg-card/80 supports-[backdrop-filter]:bg-card/70 mx-auto flex w-full items-center justify-between gap-3 rounded-sm px-3 py-3 supports-[backdrop-filter]:backdrop-blur-xl sm:px-4',
+          wide ? 'max-w-[100%]' : 'max-w-[1560px]',
         )}
       >
         <Link
           to="/"
           className={cn(
-            'text-foreground shrink-0 text-lg font-medium',
+            'text-foreground shrink-0 rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_26%,transparent)]',
             !wide && 'font-semibold',
           )}
         >
-          <span className="flex items-center gap-2.5">
-            <span className="bg-primary/10 flex items-center justify-center rounded-lg p-1.5">
-              <HardDrive className="text-primary size-5" strokeWidth={2} />
+          <span className="flex items-center gap-3 rounded-sm px-1 py-1">
+            <span className="text-primary flex items-center justify-center p-2">
+              <HardDrive className="size-4.5" strokeWidth={2} />
             </span>
-            DriveCellar
+            <span className="min-w-0">
+              <span className="block text-sm leading-none font-semibold tracking-[-0.02em]">
+                DriveCellar
+              </span>
+            </span>
           </span>
         </Link>
 
-        <div className="mx-2 flex max-w-xl min-w-0 flex-1 justify-center md:mx-4">
+        <div className="mx-1 flex max-w-3xl min-w-0 flex-1 justify-center md:mx-3">
           {session?.user && activeOrganizationId ? (
             <AppHeaderSearch
               organizationId={activeOrganizationId}
               activeConnectionId={activeConnectionId}
               activePath={activePath}
             />
-          ) : null}
+          ) : (
+            <div className="text-muted-foreground border-border/70 bg-muted/35 hidden flex-1 items-center justify-center gap-2 rounded-sm border border-dashed px-4 py-2 text-sm lg:flex">
+              <Search className="size-4" />
+              Browse, search, and share files across your connected storage
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
@@ -100,19 +109,18 @@ function HeaderOrganizationSwitcher() {
       sideOffset={8}
       classNames={{
         content: {
-          base: 'rounded-2xl border border-border bg-popover p-2 shadow-xl',
-          menuItem: 'rounded-xl',
+          base: 'rounded-sm border border-border bg-popover p-2 shadow-xl',
+          menuItem: 'rounded-sm',
         },
       }}
       trigger={
         <Button
           variant="ghost"
           size="sm"
-          className="flex max-w-[min(100%,15rem)] min-w-0 items-center gap-2 rounded-xl px-2.5 sm:px-3"
           title={organizationLabel}
           type="button"
         >
-          <span className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+          <span className="text-primary flex size-7 shrink-0 items-center justify-center">
             <Building2 className="text-primary size-4" aria-hidden />
           </span>
           <span className="hidden min-w-0 flex-1 truncate text-left text-sm sm:block">

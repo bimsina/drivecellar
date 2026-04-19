@@ -60,7 +60,7 @@ export function SortToolbar({
   return (
     <div
       className={cn(
-        'border-border flex w-full flex-wrap items-center justify-end gap-0.5 border-b pb-2',
+        'flex w-full flex-wrap items-center justify-end gap-0.5',
         className,
       )}
     >

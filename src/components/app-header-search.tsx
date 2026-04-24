@@ -286,12 +286,12 @@ export function AppHeaderSearch({
         type="button"
         variant="outline"
         size="sm"
-        className="border-border/75 bg-background/85 text-muted-foreground h-10 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-sm px-3 shadow-none"
+        className="border-border/80 bg-card text-muted-foreground hover:bg-accent/70 h-9 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-sm px-3 shadow-none"
         onClick={() => setCommandOpen(true)}
       >
         <Search className="size-4 shrink-0 opacity-70" aria-hidden />
-        <span className="truncate">Search files & folders…</span>
-        <kbd className="bg-muted text-muted-foreground border-border/70 pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-sm border px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
+        <span className="truncate">Search indexed files</span>
+        <kbd className="bg-muted/70 text-muted-foreground border-border/70 pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-sm border px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
           {shortcutHint}
         </kbd>
       </Button>
@@ -305,7 +305,7 @@ export function AppHeaderSearch({
         <div className="border-border flex w-full items-center gap-1 border-b px-2 pb-2">
           <div className="w-full flex-1">
             <CommandInput
-              placeholder="Type to search indexed files…"
+              placeholder="Path, filename, tag..."
               value={draft}
               onValueChange={setDraft}
               className="placeholder:text-muted-foreground w-full flex-1 border-0 py-3 shadow-none focus-visible:ring-0"
@@ -341,9 +341,7 @@ export function AppHeaderSearch({
                 </p>
                 {scopeLocksConnection ? (
                   <p className="text-muted-foreground text-xs leading-snug">
-                    Limited to &quot;
-                    {activeConnectionName ?? 'current connection'}
-                    .&quot; Change scope using the chips above.
+                    Scoped to {activeConnectionName ?? 'current connection'}.
                   </p>
                 ) : null}
                 <ScrollArea className="max-h-28 w-full">
@@ -511,9 +509,7 @@ export function AppHeaderSearch({
             </div>
           ) : showEmpty ? (
             <CommandEmpty className="text-muted-foreground py-10 text-sm">
-              {canSearch
-                ? emptyLabel
-                : 'Type a query, set filters, or use scope chips (when browsing a connection).'}
+              {canSearch ? emptyLabel : 'Start typing or add filters.'}
             </CommandEmpty>
           ) : (
             <>

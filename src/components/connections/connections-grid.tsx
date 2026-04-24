@@ -61,7 +61,7 @@ function sortConnections(
 function LoadingState() {
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="flex items-center justify-end gap-2 rounded-sm bg-transparent px-3 py-2">
+      <div className="flex items-center justify-end gap-2 bg-transparent px-1 py-1">
         <Skeleton className="h-9 w-9 rounded-sm" />
         <Skeleton className="h-9 w-28 rounded-sm" />
         <Skeleton className="h-9 w-9 rounded-sm" />
@@ -115,17 +115,12 @@ export function ConnectionsGrid({
       ) : null}
 
       {connections.length === 0 ? (
-        <div className="bg-muted/35 flex min-h-[min(60vh,24rem)] flex-col items-center justify-center rounded-sm px-4 py-16 text-center">
+        <div className="border-border/70 bg-card/60 flex min-h-[min(60vh,24rem)] flex-col items-center justify-center rounded-sm border border-dashed px-4 py-16 text-center">
           <div className="text-muted-foreground border-border/70 bg-background/70 rounded-sm border p-4">
             <Folder className="mx-auto size-12" strokeWidth={1.25} />
           </div>
-          <h2 className="text-foreground mt-6 text-base font-medium">
-            No storage connections yet
-          </h2>
-          <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
-            {canManageConnections
-              ? 'Add a location to browse files.'
-              : 'No storage connections are available for this team yet.'}
+          <p className="text-foreground mt-6 text-sm font-medium">
+            {canManageConnections ? 'Connect storage' : 'No storage available'}
           </p>
           {canManageConnections ? (
             <Button
@@ -134,7 +129,7 @@ export function ConnectionsGrid({
               onClick={onCreate}
             >
               <Plus className="mr-2 size-4" />
-              New
+              Add storage
             </Button>
           ) : null}
         </div>
@@ -166,13 +161,15 @@ export function ConnectionsGrid({
 
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-foreground text-sm font-medium">Storage</h2>
+              <h2 className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+                Storage
+              </h2>
               {isRefreshing ? (
                 <span className="text-muted-foreground text-xs">Updating…</span>
               ) : null}
             </div>
 
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sorted.map((connection) => (
                 <li key={connection.id} className="min-w-0">
                   <ConnectionTile
@@ -208,13 +205,13 @@ function ConnectionTile({
         to="/c/$id"
         params={{ id: connection.id }}
         className={cn(
-          'flex min-h-32 flex-col items-start gap-4 rounded-sm px-5 py-5 text-left transition-[background-color] duration-150',
-          'text-foreground hover:bg-muted/28 focus-visible:ring-ring outline-none focus-visible:ring-2',
+          'border-border/70 bg-card/78 flex min-h-32 flex-col items-start gap-4 rounded-sm border px-4 py-4 text-left transition-[background-color,border-color,box-shadow] duration-150',
+          'text-foreground hover:border-border hover:bg-accent/45 focus-visible:ring-ring outline-none hover:shadow-sm focus-visible:ring-2',
         )}
       >
         <span
           className={cn(
-            'text-primary flex size-[4.4rem] shrink-0 items-center justify-center',
+            'text-primary flex size-14 shrink-0 items-center justify-center rounded-sm',
           )}
           style={getPaletteIconBadgeStyle(connection.color)}
         >
@@ -228,11 +225,11 @@ function ConnectionTile({
           />
         </span>
         <span className="w-full min-w-0">
-          <span className="line-clamp-2 text-base leading-snug font-semibold">
+          <span className="line-clamp-2 text-sm leading-snug font-semibold">
             {connection.name}
           </span>
           {connection.description ? (
-            <span className="text-muted-foreground mt-2 line-clamp-2 text-sm leading-relaxed">
+            <span className="text-muted-foreground mt-1 line-clamp-1 text-xs leading-relaxed">
               {connection.description}
             </span>
           ) : null}

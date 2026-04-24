@@ -3,25 +3,17 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { AppLoading } from '#/components/app-loading'
+import { NativeFilePreview } from '#/components/file-explorer/native-file-preview'
+import {
+  buildShareDownloadUrl,
+  buildShareInlinePreviewUrl,
+} from '#/components/file-explorer/preview-utils'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { useTRPC } from '#/integrations/trpc/react'
 import { cn } from '#/lib/utils'
-
-function buildShareDownloadUrl(token: string, path: string, password?: string) {
-  const params = new URLSearchParams({
-    token,
-    path,
-  })
-
-  if (password) {
-    params.set('password', password)
-  }
-
-  return `/api/share/download?${params.toString()}`
-}
 
 function formatBytes(n: number | null) {
   if (n == null) return '—'
@@ -112,6 +104,16 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
   }
 
   const data = shareQuery.data
+  const currentDownloadUrl = buildShareDownloadUrl(
+    token,
+    data.entry.path,
+    password,
+  )
+  const currentPreviewUrl = buildShareInlinePreviewUrl(
+    token,
+    data.entry.path,
+    password,
+  )
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -164,7 +166,19 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
                         {entry.name}
                       </Link>
                     ) : (
-                      <span className="font-medium">{entry.name}</span>
+                      <Link
+                        to="/s/$token/$"
+                        params={{
+                          token,
+                          _splat: joinSharePath(path, entry.path).slice(1),
+                        }}
+                        search={{ password }}
+                        className={cn(
+                          'hover:text-primary font-medium transition-colors',
+                        )}
+                      >
+                        {entry.name}
+                      </Link>
                     )}
                     <p className="text-muted-foreground text-xs">
                       {entry.isDirectory ? 'Folder' : formatBytes(entry.size)}
@@ -191,18 +205,31 @@ export function SharedLinkPage({ token, path }: SharedLinkPageProps) {
           </div>
         </Card>
       ) : (
-        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex items-center justify-between gap-4 rounded-sm p-6 supports-[backdrop-filter]:backdrop-blur-xl">
-          <div>
-            <h2 className="font-medium">{data.entry.name}</h2>
-            <p className="text-muted-foreground text-sm">
-              {formatBytes(data.entry.size)}
-            </p>
+        <Card className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex min-h-[34rem] flex-col overflow-hidden rounded-sm supports-[backdrop-filter]:backdrop-blur-xl">
+          <div className="border-border flex shrink-0 flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="min-w-0">
+              <h2 className="text-foreground truncate font-medium">
+                {data.entry.name}
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {formatBytes(data.entry.size)}
+                {data.entry.mimeType ? ` · ${data.entry.mimeType}` : null}
+              </p>
+            </div>
+            <Button asChild>
+              <a href={currentDownloadUrl} download>
+                Download file
+              </a>
+            </Button>
           </div>
-          <Button asChild>
-            <a href={buildShareDownloadUrl(token, '/', password)} download>
-              Download file
-            </a>
-          </Button>
+          <div className="bg-muted/30 flex min-h-0 flex-1 overflow-hidden">
+            <NativeFilePreview
+              entry={data.entry}
+              previewUrl={currentPreviewUrl}
+              downloadUrl={currentDownloadUrl}
+              showDownloadAction={false}
+            />
+          </div>
         </Card>
       )}
     </div>

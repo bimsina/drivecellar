@@ -425,10 +425,14 @@ export function createS3Provider(config: S3Config): StorageProvider {
 
     async getReadStream(
       entryPath: string,
+      options,
     ): Promise<ReadableStream<Uint8Array>> {
       const key = objectKey(storePrefix, entryPath)
+      const range = options?.range
+        ? `bytes=${options.range.start}-${options.range.end ?? ''}`
+        : undefined
       const response = await client.send(
-        new GetObjectCommand({ Bucket: bucket, Key: key }),
+        new GetObjectCommand({ Bucket: bucket, Key: key, Range: range }),
       )
       const body: unknown = response.Body
       if (!body) {

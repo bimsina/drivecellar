@@ -73,7 +73,7 @@ export function UploadButton({
             type="button"
             variant="outline"
             size="sm"
-            className="border-border bg-card text-foreground hover:bg-accent h-9 rounded-sm px-3 font-normal"
+            className="border-border bg-card text-foreground hover:bg-accent h-8 rounded-sm px-2.5 font-normal"
             disabled={disabled}
           >
             <Upload className="size-4" />

@@ -28,7 +28,8 @@ import type { PermissionAccess } from '#/lib/connections'
 import { cn } from '#/lib/utils'
 
 import type { ExplorerFileEntry } from './file-list'
-import { buildDownloadUrl, isImageEntry } from './preview-utils'
+import { PreviewKindIcon } from './native-file-preview'
+import { buildInlinePreviewUrl, isImageEntry } from './preview-utils'
 
 function formatBytes(value: number | null) {
   if (value == null) {
@@ -176,21 +177,15 @@ function InspectorSurface({
   return (
     <section
       className={cn(
-        'bg-card/80 supports-[backdrop-filter]:bg-card/70 flex h-full min-h-[28rem] flex-col overflow-hidden rounded-sm supports-[backdrop-filter]:backdrop-blur-xl',
+        'border-border/70 bg-card/88 supports-[backdrop-filter]:bg-card/74 flex h-full min-h-[28rem] flex-col overflow-hidden rounded-sm border supports-[backdrop-filter]:backdrop-blur-xl',
         className,
       )}
     >
       <div className="border-border/70 flex items-start justify-between gap-3 border-b px-5 py-4">
         <div className="min-w-0">
-          <p className="text-muted-foreground text-[0.72rem] font-semibold tracking-[0.12em] uppercase">
-            Details
-          </p>
-          <h2 className="text-foreground mt-1 text-base font-semibold">
+          <h2 className="text-foreground text-sm font-semibold">
             {isCurrentLocation ? 'Current folder' : 'Selected item'}
           </h2>
-          <p className="text-muted-foreground mt-1 text-sm leading-6">
-            Metadata and access details for the current selection.
-          </p>
         </div>
         <Button
           type="button"
@@ -209,7 +204,7 @@ function InspectorSurface({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto px-5 py-5">
-        <div className="bg-muted/42 border-border/70 mb-5 rounded-sm border p-4">
+        <div className="bg-muted/35 border-border/70 mb-5 rounded-sm border p-4">
           <div className="flex items-start gap-3">
             <div
               className="text-primary flex size-14 shrink-0 items-center justify-center"
@@ -217,7 +212,7 @@ function InspectorSurface({
             >
               {showImage ? (
                 <img
-                  src={buildDownloadUrl(connectionId, inspectedPath)}
+                  src={buildInlinePreviewUrl(connectionId, inspectedPath)}
                   alt=""
                   className="size-full rounded-sm object-cover"
                 />
@@ -228,7 +223,7 @@ function InspectorSurface({
                   className="size-6"
                 />
               ) : (
-                <FileIcon className="size-6" strokeWidth={1.8} />
+                <PreviewKindIcon entry={entry} className="size-6" />
               )}
             </div>
             <div className="min-w-0 flex-1">
@@ -267,7 +262,7 @@ function InspectorSurface({
             </div>
             <dl className="space-y-3 text-sm">
               <InfoRow
-                label="Location"
+                label="Connection"
                 value={connectionName}
                 icon={<HardDrive className="size-4" />}
               />

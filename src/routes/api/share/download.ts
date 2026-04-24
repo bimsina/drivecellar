@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { resolveSharedLinkAccess } from '#/lib/shared-links.ts'
 import { normalizePath, PathError } from '#/lib/storage/path-utils.ts'
+import { parseRangeHeader } from '#/lib/storage/range-request.ts'
 
 export const Route = createFileRoute('/api/share/download')({
   server: {
@@ -11,6 +12,10 @@ export const Route = createFileRoute('/api/share/download')({
         const token = url.searchParams.get('token')
         const password = url.searchParams.get('password') ?? undefined
         const pathParam = url.searchParams.get('path') ?? '/'
+        const disposition =
+          url.searchParams.get('disposition') === 'inline'
+            ? 'inline'
+            : 'attachment'
 
         if (!token) {
           throw new Response('Missing token.', { status: 400 })
@@ -55,20 +60,39 @@ export const Route = createFileRoute('/api/share/download')({
           throw new Response('File not found.', { status: 404 })
         }
 
+        const range = parseRangeHeader(request.headers.get('Range'), meta.size)
+
+        if (range.status === 'unsatisfiable') {
+          throw new Response('Range not satisfiable.', {
+            status: 416,
+            headers: {
+              'Content-Range': range.contentRange,
+            },
+          })
+        }
+
         const stream = await resolved.provider.getReadStream(
           resolved.absolutePath,
+          range.status === 'partial' ? { range: range.range } : undefined,
         )
         const headers = new Headers()
         headers.set('Content-Type', meta.mimeType ?? 'application/octet-stream')
+        headers.set('Accept-Ranges', 'bytes')
         headers.set(
           'Content-Disposition',
-          `attachment; filename*=UTF-8''${encodeURIComponent(meta.fileName)}`,
+          `${disposition}; filename*=UTF-8''${encodeURIComponent(meta.fileName)}`,
         )
-        if (meta.size !== null) {
+        if (range.status === 'partial') {
+          headers.set('Content-Range', range.contentRange)
+          headers.set('Content-Length', String(range.contentLength))
+        } else if (meta.size !== null) {
           headers.set('Content-Length', String(meta.size))
         }
 
-        return new Response(stream, { headers })
+        return new Response(stream, {
+          status: range.status === 'partial' ? 206 : 200,
+          headers,
+        })
       },
     },
   },

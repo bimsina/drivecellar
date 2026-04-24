@@ -467,7 +467,7 @@ export function FileExplorer({
               void handleDrop(event)
             }}
           >
-            <div className="mb-0 flex flex-col gap-3 px-0 py-3 sm:px-0">
+            <div className="mb-0 flex flex-col gap-3 px-0 py-2 sm:px-0">
               {showNoIndexAlert ? (
                 <Alert>
                   <AlertTitle>No index has been run yet</AlertTitle>
@@ -483,21 +483,27 @@ export function FileExplorer({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              <div className="flex flex-col gap-3 px-1 py-1 lg:px-1">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h1 className="text-foreground text-lg font-semibold">
+              <div className="border-border/70 bg-card/86 flex flex-col gap-3 rounded-sm border px-3 py-3 shadow-sm shadow-black/[0.02] lg:px-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <h1 className="text-foreground truncate text-base font-semibold">
                       {normalizedPath === '/'
                         ? connectionName
                         : itemNameFromPath(normalizedPath, connectionName)}
                     </h1>
+                    <ExplorerBreadcrumb
+                      connectionId={connectionId}
+                      connectionName={connectionName}
+                      path={normalizedPath}
+                      onNavigate={onPathChange}
+                    />
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
                       variant={inspectorOpen ? 'secondary' : 'outline'}
                       size="sm"
-                      className="h-9 rounded-sm px-3"
+                      className="h-8 rounded-sm px-2.5"
                       onMouseDown={(event) => {
                         event.preventDefault()
                       }}
@@ -511,7 +517,7 @@ export function FileExplorer({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 rounded-sm px-3"
+                        className="h-8 rounded-sm px-2.5"
                         onClick={() => {
                           setManageAccessTarget({
                             path: normalizedPath,
@@ -536,7 +542,7 @@ export function FileExplorer({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-9 rounded-sm px-3"
+                          className="h-8 rounded-sm px-2.5"
                           onClick={() => setCreateFolderOpen(true)}
                         >
                           <FolderPlus className="size-4" />
@@ -550,26 +556,17 @@ export function FileExplorer({
                     ) : null}
                   </div>
                 </div>
-
-                <div className="min-w-0 flex-1">
-                  <ExplorerBreadcrumb
-                    connectionId={connectionId}
-                    connectionName={connectionName}
-                    path={normalizedPath}
-                    onNavigate={onPathChange}
-                  />
-                </div>
               </div>
             </div>
             <div
               className={cn(
-                'grid min-h-0 flex-1 gap-4',
+                'grid min-h-0 flex-1 gap-3',
                 inspectorOpen && 'lg:grid-cols-[minmax(0,1fr)_22rem]',
               )}
             >
               <div
                 ref={listScrollContainerRef}
-                className="relative min-h-0 overflow-auto px-1 py-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
+                className="relative min-h-0 overflow-auto px-0 py-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
               >
                 {firstPageQuery.isPending ? (
                   <div className="space-y-4">
@@ -615,7 +612,7 @@ export function FileExplorer({
                 )}
 
                 {canWriteCurrentPath && isDragActive ? (
-                  <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 border-2 border-dashed p-5 backdrop-blur-sm">
+                  <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 rounded-sm border-2 border-dashed p-5 backdrop-blur-sm">
                     <div className="flex h-full flex-col items-center justify-center text-center">
                       <div className="bg-primary/10 text-primary rounded-sm p-4">
                         <Upload className="size-6" />

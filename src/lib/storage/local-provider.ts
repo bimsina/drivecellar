@@ -130,13 +130,17 @@ export function createLocalProvider(config: LocalConfig): StorageProvider {
 
     async getReadStream(
       entryPath: string,
+      options,
     ): Promise<ReadableStream<Uint8Array>> {
       const fsPath = await pathToFs(entryPath)
       const st = await stat(fsPath)
       if (st.isDirectory()) {
         throw new Error('Cannot read a directory as a file.')
       }
-      const nodeStream: ReadStream = createReadStream(fsPath)
+      const nodeStream: ReadStream = createReadStream(fsPath, {
+        start: options?.range?.start,
+        end: options?.range?.end,
+      })
       return Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>
     },
 

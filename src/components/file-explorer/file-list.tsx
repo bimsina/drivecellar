@@ -73,11 +73,16 @@ import { normalizePath, PathError } from '#/lib/storage/path-utils'
 import type { TagListItem } from '#/lib/tags.ts'
 import { cn } from '#/lib/utils'
 
-import { buildDownloadUrl, isImageEntry } from './preview-utils'
+import { PreviewKindIcon } from './native-file-preview'
+import {
+  buildDownloadUrl,
+  buildInlinePreviewUrl,
+  isImageEntry,
+} from './preview-utils'
 
-const LIST_VIRTUAL_ROW_HEIGHT = 64
+const LIST_VIRTUAL_ROW_HEIGHT = 56
 const GRID_FOLDER_CARD_HEIGHT = 78
-const GRID_FILE_CARD_HEIGHT = 182
+const GRID_FILE_CARD_HEIGHT = 168
 const GRID_SECTION_HEADER_HEIGHT = 36
 const GRID_FOLDER_ROW_HEIGHT = GRID_FOLDER_CARD_HEIGHT + 10
 const GRID_FILE_ROW_HEIGHT = GRID_FILE_CARD_HEIGHT + 10
@@ -251,8 +256,8 @@ function FolderCard({
       className={cn(
         'group flex cursor-default items-stretch gap-2 rounded-sm border px-2 py-1.5 transition-[background-color,border-color,box-shadow] duration-150',
         isSelected
-          ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
-          : 'border-border/75 bg-card/92 hover:border-border hover:bg-muted/72',
+          ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
+          : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
       )}
     >
       <div
@@ -262,7 +267,7 @@ function FolderCard({
         aria-pressed={isSelected}
       >
         <span
-          className="text-primary flex size-11 shrink-0 items-center justify-center"
+          className="bg-muted/65 text-primary flex size-11 shrink-0 items-center justify-center rounded-sm"
           style={getPaletteIconBadgeStyle(entry.color)}
         >
           <DynamicIcon
@@ -293,7 +298,7 @@ function FileCard({
   onSelect,
   onActivate,
 }: BaseEntryProps) {
-  const src = buildDownloadUrl(connectionId, entry.path)
+  const src = buildInlinePreviewUrl(connectionId, entry.path)
   const showImage = isImageEntry(entry)
   const shortLabel = fileTypeShortLabel(entry)
 
@@ -307,11 +312,11 @@ function FileCard({
       className={cn(
         'group flex cursor-default flex-col overflow-hidden rounded-sm border transition-[background-color,border-color,box-shadow] duration-150',
         isSelected
-          ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
-          : 'border-border/75 bg-card/92 hover:border-border hover:bg-muted/72',
+          ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
+          : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
       )}
     >
-      <div className="border-border/50 flex items-start gap-2 border-b px-3 py-3">
+      <div className="border-border/50 flex items-start gap-2 border-b px-3 py-2.5">
         <div className="min-w-0 flex-1">
           <p className="text-foreground truncate text-sm font-semibold">
             {entry.name}
@@ -325,7 +330,7 @@ function FileCard({
       </div>
 
       <div
-        className="bg-muted/35 flex min-h-28 flex-1 items-center justify-center px-4 py-4"
+        className="bg-muted/35 flex min-h-24 flex-1 items-center justify-center px-4 py-3"
         role="button"
         tabIndex={-1}
         aria-pressed={isSelected}
@@ -340,7 +345,7 @@ function FileCard({
         ) : (
           <div className="text-muted-foreground flex flex-col items-center justify-center gap-2">
             <div className="text-primary flex items-center justify-center p-3">
-              <FileIcon className="size-8" strokeWidth={1.6} />
+              <PreviewKindIcon entry={entry} />
             </div>
             <span className="text-[11px] font-semibold">{shortLabel}</span>
           </div>
@@ -777,16 +782,16 @@ export function FileList({
           onDoubleClick={() => openEntry(entry)}
           onContextMenuCapture={() => selectEntry(entry.path)}
           className={cn(
-            'group flex h-full min-h-0 cursor-default items-center justify-between gap-3 rounded-sm border px-3 py-2 transition-[background-color,border-color,box-shadow]',
+            'group grid h-full min-h-0 cursor-default grid-cols-[minmax(0,1fr)_7rem_8rem_5rem] items-center gap-3 rounded-sm border px-3 py-2 transition-[background-color,border-color,box-shadow] max-md:grid-cols-[minmax(0,1fr)_5rem]',
             isSelected
-              ? 'border-primary/25 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
-              : 'border-border/70 bg-card/94 hover:border-border hover:bg-muted/72',
+              ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
+              : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
           )}
         >
           <span className="inline-flex min-w-0 items-center gap-3">
             <span
               className={cn(
-                'flex size-10 shrink-0 items-center justify-center',
+                'flex size-9 shrink-0 items-center justify-center rounded-sm',
                 entry.isDirectory ? 'text-primary' : 'text-muted-foreground',
               )}
               style={
@@ -820,13 +825,14 @@ export function FileList({
             </span>
           </span>
 
-          <div className="ml-2 flex shrink-0 items-center gap-4">
-            <div className="text-muted-foreground hidden min-w-28 text-right text-xs md:block">
-              {formatCompactDate(entry.lastModified)}
-            </div>
-            <div className="text-muted-foreground min-w-16 text-right text-xs">
-              {entry.isDirectory ? '—' : formatBytes(entry.size)}
-            </div>
+          <div className="text-muted-foreground truncate text-xs max-md:text-right">
+            {entry.isDirectory ? 'Folder' : fileTypeShortLabel(entry)}
+          </div>
+          <div className="text-muted-foreground truncate text-right text-xs max-md:hidden">
+            {formatCompactDate(entry.lastModified)}
+          </div>
+          <div className="text-muted-foreground truncate text-right text-xs max-md:hidden">
+            {entry.isDirectory ? '—' : formatBytes(entry.size)}
           </div>
         </div>
       )
@@ -1074,7 +1080,7 @@ export function FileList({
   return (
     <div className="space-y-3">
       <SortToolbar
-        className="px-1 py-1"
+        className="border-border/70 bg-card/72 rounded-sm border px-2 py-1.5"
         sortField={sortField}
         onSortFieldChange={setSortField}
         sortAscending={sortAscending}
@@ -1110,17 +1116,17 @@ export function FileList({
       />
 
       {entries.length === 0 ? (
-        <div className="bg-muted/35 flex min-h-[min(50vh,18rem)] flex-col items-center justify-center rounded-sm px-4 py-12 text-center">
-          <div className="bg-background/65 mb-4 flex items-center justify-center rounded-sm p-4">
+        <div className="border-border/70 bg-card/60 flex min-h-[min(50vh,18rem)] flex-col items-center justify-center rounded-sm border border-dashed px-4 py-12 text-center">
+          <div className="bg-background/65 border-border/70 mb-4 flex items-center justify-center rounded-sm border p-4">
             <FolderIcon
               className="text-muted-foreground/70 size-10"
               strokeWidth={1.25}
             />
           </div>
-          <p className="text-foreground mt-2 text-base font-semibold">
+          <p className="text-foreground mt-2 text-sm font-semibold">
             This folder is empty
           </p>
-          <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
             {canWriteCurrentPath
               ? 'Drop files here, or use New folder and Upload.'
               : 'No files are available here.'}
@@ -1143,23 +1149,15 @@ export function FileList({
               <span className="bg-muted rounded-sm px-2 py-1 font-medium">
                 {entries.length} {entries.length === 1 ? 'item' : 'items'}
               </span>
-              <span>
-                {selectedPath
-                  ? 'Single click selects, double click opens'
-                  : 'Use arrow keys to move between items'}
-              </span>
             </div>
           </div>
 
           {viewMode === 'list' ? (
-            <div className="text-muted-foreground mb-2 grid grid-cols-[1fr_auto] items-center px-4 text-[0.72rem] font-medium tracking-[0.08em] uppercase">
+            <div className="text-muted-foreground mb-2 grid grid-cols-[minmax(0,1fr)_7rem_8rem_5rem] items-center gap-3 px-4 text-[0.72rem] font-medium tracking-[0.08em] uppercase max-md:grid-cols-[minmax(0,1fr)_5rem]">
               <span>Name</span>
-              <div className="flex items-center gap-4">
-                <span className="hidden min-w-28 text-right md:block">
-                  Modified
-                </span>
-                <span className="min-w-16 text-right">Size</span>
-              </div>
+              <span className="text-right md:text-left">Type</span>
+              <span className="text-right max-md:hidden">Modified</span>
+              <span className="text-right max-md:hidden">Size</span>
             </div>
           ) : null}
 

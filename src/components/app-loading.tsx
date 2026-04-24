@@ -13,7 +13,7 @@ export function AppLoading({ label = 'Loading…' }: AppLoadingProps) {
       aria-busy="true"
       aria-label={label}
     >
-      <div className="bg-muted/35 flex size-14 items-center justify-center rounded-sm">
+      <div className="bg-card border-border/70 flex size-12 items-center justify-center rounded-sm border">
         <Loader2 className="text-primary size-6 animate-spin" aria-hidden />
       </div>
       <p className="text-muted-foreground text-sm font-medium">{label}</p>

@@ -1,11 +1,10 @@
-import { FileIcon } from 'lucide-react'
-
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import type { FileEntry } from '#/lib/storage/types'
 import { cn } from '#/lib/utils'
 
-import { buildDownloadUrl, isImageEntry } from './preview-utils'
+import { NativeFilePreview } from './native-file-preview'
+import { buildDownloadUrl, buildInlinePreviewUrl } from './preview-utils'
 
 function formatBytes(n: number | null) {
   if (n === null) return '—'
@@ -50,8 +49,8 @@ export function FilePreview({
     )
   }
 
-  const src = buildDownloadUrl(connectionId, entry.path)
-  const showImage = isImageEntry(entry)
+  const downloadUrl = buildDownloadUrl(connectionId, entry.path)
+  const previewUrl = buildInlinePreviewUrl(connectionId, entry.path)
 
   return (
     <aside
@@ -63,14 +62,13 @@ export function FilePreview({
       <p className="text-foreground text-sm font-medium">Details</p>
 
       <div className="border-border relative aspect-[4/3] w-full overflow-hidden rounded-sm border bg-[#f8f9fa] dark:bg-white/5">
-        {showImage ? (
-          <img src={src} alt="" className="size-full object-contain" />
-        ) : (
-          <div className="text-muted-foreground flex size-full flex-col items-center justify-center gap-2 p-6">
-            <FileIcon className="size-12 opacity-40" />
-            <span className="text-xs">No inline preview</span>
-          </div>
-        )}
+        <NativeFilePreview
+          entry={entry}
+          previewUrl={previewUrl}
+          downloadUrl={downloadUrl}
+          compact
+          showDownloadAction={false}
+        />
       </div>
 
       <Card className="border-0 bg-transparent shadow-none">

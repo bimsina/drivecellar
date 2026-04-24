@@ -60,7 +60,7 @@ export function SortToolbar({
   return (
     <div
       className={cn(
-        'flex w-full flex-wrap items-center justify-end gap-0.5',
+        'flex w-full flex-wrap items-center justify-end gap-1',
         className,
       )}
     >
@@ -68,7 +68,7 @@ export function SortToolbar({
         type="button"
         variant="ghost"
         size="icon"
-        className="text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="text-muted-foreground hover:bg-accent hover:text-foreground size-8"
         aria-label={sortAscending ? 'Sort ascending' : 'Sort descending'}
         onClick={onToggleSortDirection}
       >
@@ -85,7 +85,7 @@ export function SortToolbar({
             type="button"
             variant="ghost"
             size="sm"
-            className="text-foreground hover:bg-accent h-9 gap-1 px-2 font-normal"
+            className="text-foreground hover:bg-accent h-8 gap-1 px-2 text-xs font-medium"
           >
             {fieldLabels[sortField]}
             <ChevronDown className="size-4 opacity-70" />
@@ -116,7 +116,7 @@ export function SortToolbar({
               type="button"
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:bg-accent"
+              className="text-muted-foreground hover:bg-accent size-8"
               aria-label="More actions"
             >
               <MoreVertical className="size-[1.125rem]" />

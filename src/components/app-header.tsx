@@ -31,15 +31,15 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 px-4 pt-3 md:px-6 lg:px-8',
-        wide ? 'pb-1' : 'pb-3',
+        'border-border/60 bg-background/82 sticky top-0 z-50 border-b px-3 supports-[backdrop-filter]:backdrop-blur-xl md:px-5 lg:px-6',
+        wide ? 'py-2' : 'py-3',
         className,
       )}
     >
       <div
         className={cn(
-          'bg-card/80 supports-[backdrop-filter]:bg-card/70 mx-auto flex w-full items-center justify-between gap-3 rounded-sm px-3 py-3 supports-[backdrop-filter]:backdrop-blur-xl sm:px-4',
-          wide ? 'max-w-[100%]' : 'max-w-[1560px]',
+          'mx-auto flex w-full items-center justify-between gap-3',
+          wide ? 'max-w-[100%]' : 'max-w-[1480px]',
         )}
       >
         <Link
@@ -49,12 +49,12 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
             !wide && 'font-semibold',
           )}
         >
-          <span className="flex items-center gap-3 rounded-sm px-1 py-1">
-            <span className="text-primary flex items-center justify-center p-2">
+          <span className="flex items-center gap-2 rounded-sm px-1 py-1">
+            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-sm">
               <HardDrive className="size-4.5" strokeWidth={2} />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm leading-none font-semibold tracking-[-0.02em]">
+              <span className="block text-sm leading-none font-semibold">
                 DriveCellar
               </span>
             </span>
@@ -69,9 +69,9 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
               activePath={activePath}
             />
           ) : (
-            <div className="text-muted-foreground border-border/70 bg-muted/35 hidden flex-1 items-center justify-center gap-2 rounded-sm border border-dashed px-4 py-2 text-sm lg:flex">
+            <div className="text-muted-foreground border-border/80 bg-card hidden flex-1 items-center justify-center gap-2 rounded-sm border px-4 py-2 text-sm lg:flex">
               <Search className="size-4" />
-              Browse, search, and share files across your connected storage
+              Browse, search, share
             </div>
           )}
         </div>
@@ -109,7 +109,7 @@ function HeaderOrganizationSwitcher() {
       sideOffset={8}
       classNames={{
         content: {
-          base: 'rounded-sm border border-border bg-popover p-2 shadow-xl',
+          base: 'rounded-sm border border-border bg-popover p-2 shadow-2xl shadow-black/12',
           menuItem: 'rounded-sm',
         },
       }}
@@ -120,8 +120,8 @@ function HeaderOrganizationSwitcher() {
           title={organizationLabel}
           type="button"
         >
-          <span className="text-primary flex size-7 shrink-0 items-center justify-center">
-            <Building2 className="text-primary size-4" aria-hidden />
+          <span className="bg-muted text-foreground border-border/70 flex size-7 shrink-0 items-center justify-center rounded-sm border">
+            <Building2 className="size-4" aria-hidden />
           </span>
           <span className="hidden min-w-0 flex-1 truncate text-left text-sm sm:block">
             {organizationLabel}

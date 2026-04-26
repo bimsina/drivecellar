@@ -4,6 +4,7 @@ import type {
   ConnectionConfig,
   CreateConnectionInput,
   ConnectionListItem,
+  TestConnectionConfigResult,
   UpdateConnectionInput,
 } from '#/lib/connections.ts'
 import { ConnectionFormDialog } from './connection-form-dialog'
@@ -21,7 +22,10 @@ type ConnectionsWorkspaceProps = {
   onUpdate: (input: UpdateConnectionInput) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onManageIndexing: (connection: ConnectionListItem) => void
-  testBeforeCreate?: (config: ConnectionConfig) => Promise<void>
+  testBeforeCreate?: (
+    config: ConnectionConfig,
+  ) => Promise<TestConnectionConfigResult>
+  ensureLocalPathBeforeCreate?: (basePath: string) => Promise<void>
 }
 
 export function ConnectionsWorkspace({
@@ -36,6 +40,7 @@ export function ConnectionsWorkspace({
   onDelete,
   onManageIndexing,
   testBeforeCreate,
+  ensureLocalPathBeforeCreate,
 }: ConnectionsWorkspaceProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingConnection, setEditingConnection] =
@@ -96,6 +101,7 @@ export function ConnectionsWorkspace({
           open={createOpen}
           onOpenChange={setCreateOpen}
           testBeforeCreate={testBeforeCreate}
+          ensureLocalPathBeforeCreate={ensureLocalPathBeforeCreate}
           onSubmit={async (input) => {
             await onCreate(input as CreateConnectionInput)
           }}

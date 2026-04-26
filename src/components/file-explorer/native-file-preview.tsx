@@ -1,4 +1,6 @@
 import {
+  Check,
+  Copy,
   Download,
   FileAudio,
   FileIcon,
@@ -7,6 +9,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
 import type { FileEntry } from '#/lib/storage/types'
@@ -66,9 +69,14 @@ export function NativeFilePreview({
   const [textBody, setTextBody] = useState<string | null>(null)
   const [textError, setTextError] = useState<string | null>(null)
   const [textLoading, setTextLoading] = useState(false)
+  const [textCopied, setTextCopied] = useState(false)
+  const [textActionsVisible, setTextActionsVisible] = useState(false)
   const kind = getPreviewKind(entry)
 
   useEffect(() => {
+    setTextCopied(false)
+    setTextActionsVisible(false)
+
     if (kind !== 'text') {
       setTextBody(null)
       setTextError(null)
@@ -110,6 +118,33 @@ export function NativeFilePreview({
       cancelled = true
     }
   }, [kind, previewUrl])
+
+  useEffect(() => {
+    if (!textCopied) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTextCopied(false)
+    }, 1800)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [textCopied])
+
+  async function copyTextBody() {
+    if (textBody == null) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(textBody)
+      setTextCopied(true)
+    } catch {
+      toast.error('Could not copy file contents.')
+    }
+  }
 
   return (
     <div
@@ -199,14 +234,52 @@ export function NativeFilePreview({
           ) : textError ? (
             <p className="text-destructive text-sm">{textError}</p>
           ) : textBody != null ? (
-            <pre
-              className={cn(
-                'text-foreground border-border bg-background min-h-0 flex-1 overflow-auto rounded-sm border leading-relaxed wrap-break-word whitespace-pre-wrap',
-                compact ? 'p-3 text-[11px]' : 'p-4 text-xs sm:text-sm',
-              )}
+            <div
+              className="relative min-h-0 flex-1"
+              onPointerEnter={() => setTextActionsVisible(true)}
+              onPointerLeave={() => setTextActionsVisible(false)}
+              onFocusCapture={() => setTextActionsVisible(true)}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                  setTextActionsVisible(false)
+                }
+              }}
             >
-              {textBody}
-            </pre>
+              <div
+                className={cn(
+                  'absolute top-2 right-2 z-10 transition-opacity',
+                  textActionsVisible ? 'opacity-100' : 'opacity-0',
+                )}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'bg-background/90 gap-1.5 rounded-sm shadow-sm backdrop-blur',
+                    compact && 'size-7 px-0',
+                  )}
+                  onClick={copyTextBody}
+                  title="Copy file contents"
+                  aria-label="Copy file contents"
+                >
+                  {textCopied ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                  {compact ? null : textCopied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <pre
+                className={cn(
+                  'text-foreground border-border bg-background size-full overflow-auto rounded-sm border leading-relaxed wrap-break-word whitespace-pre-wrap',
+                  compact ? 'p-3 text-[11px]' : 'p-4 text-xs sm:text-sm',
+                )}
+              >
+                {textBody}
+              </pre>
+            </div>
           ) : (
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <FileText className="size-4" />

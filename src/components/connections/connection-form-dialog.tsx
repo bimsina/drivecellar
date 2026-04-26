@@ -37,6 +37,7 @@ import type {
   ConnectionConfig,
   CreateConnectionInput,
   ConnectionListItem,
+  TestConnectionConfigResult,
   UpdateConnectionInput,
 } from '#/lib/connections.ts'
 
@@ -46,7 +47,10 @@ type ConnectionFormDialogProps = {
   onOpenChange: (open: boolean) => void
   connection?: ConnectionListItem | null
   /** When set, create flow runs this before saving; on failure the drive is not created. */
-  testBeforeCreate?: (config: ConnectionConfig) => Promise<void>
+  testBeforeCreate?: (
+    config: ConnectionConfig,
+  ) => Promise<TestConnectionConfigResult>
+  ensureLocalPathBeforeCreate?: (basePath: string) => Promise<void>
   onSubmit: (
     input: CreateConnectionInput | UpdateConnectionInput,
   ) => Promise<void>
@@ -771,7 +775,14 @@ function S3StorageFields({
 }
 
 type SubmitAlert =
-  | { kind: 'verify'; message: string }
+  | {
+      kind: 'verify'
+      message: string
+      recovery?: {
+        kind: 'create-local-path'
+        basePath: string
+      }
+    }
   | { kind: 'save'; message: string }
 
 export function ConnectionFormDialog({
@@ -780,14 +791,65 @@ export function ConnectionFormDialog({
   onOpenChange,
   connection,
   testBeforeCreate,
+  ensureLocalPathBeforeCreate,
   onSubmit,
 }: ConnectionFormDialogProps) {
   const [step, setStep] = useState<1 | 2>(1)
   const [submitAlert, setSubmitAlert] = useState<SubmitAlert | null>(null)
+  const [isCreatingLocalPath, setIsCreatingLocalPath] = useState(false)
   const isEditMode = mode === 'edit'
   const defaultValues = isEditMode
     ? getFormValuesFromConnection(connection)
     : getDefaultFormValues()
+
+  async function runVerification(config: ConnectionConfig) {
+    if (isEditMode || !testBeforeCreate) {
+      return null
+    }
+
+    try {
+      const result = await testBeforeCreate(config)
+      if (result.ok) {
+        return null
+      }
+
+      return {
+        kind: 'verify',
+        message: result.message,
+        recovery:
+          config.type === 'local' && result.code === 'local_path_not_found'
+            ? {
+                kind: 'create-local-path' as const,
+                basePath: result.basePath,
+              }
+            : undefined,
+      } satisfies SubmitAlert
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not verify this storage connection.'
+      return {
+        kind: 'verify',
+        message,
+      } satisfies SubmitAlert
+    }
+  }
+
+  async function submitValidatedInput(
+    input: CreateConnectionInput | UpdateConnectionInput,
+  ) {
+    try {
+      await onSubmit(input)
+      onOpenChange(false)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save the connection.'
+      setSubmitAlert({ kind: 'save', message })
+    }
+  }
 
   const form = useForm({
     defaultValues,
@@ -808,28 +870,16 @@ export function ConnectionFormDialog({
       }
 
       if (!isEditMode && testBeforeCreate) {
-        try {
-          await testBeforeCreate((result.data as CreateConnectionInput).config)
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : 'Could not verify this storage connection.'
-          setSubmitAlert({ kind: 'verify', message })
+        const verification = await runVerification(
+          (result.data as CreateConnectionInput).config,
+        )
+        if (verification) {
+          setSubmitAlert(verification)
           return
         }
       }
 
-      try {
-        await onSubmit(result.data)
-        onOpenChange(false)
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Unable to save the connection.'
-        setSubmitAlert({ kind: 'save', message })
-      }
+      await submitValidatedInput(result.data)
     },
     onSubmitInvalid: () => {
       setSubmitAlert({
@@ -845,6 +895,47 @@ export function ConnectionFormDialog({
 
     if (isStepOneValid(form.state.values)) {
       setStep(2)
+    }
+  }
+
+  async function handleCreateLocalPathAndContinue() {
+    if (isEditMode || !ensureLocalPathBeforeCreate) {
+      return
+    }
+
+    const parsed = createConnectionInputSchema.safeParse(
+      toCreateInput(form.state.values),
+    )
+
+    if (!parsed.success || parsed.data.config.type !== 'local') {
+      setSubmitAlert({
+        kind: 'save',
+        message: 'Please fix the highlighted fields and try again.',
+      })
+      return
+    }
+
+    setSubmitAlert(null)
+    setIsCreatingLocalPath(true)
+
+    try {
+      await ensureLocalPathBeforeCreate(parsed.data.config.basePath)
+
+      const verification = await runVerification(parsed.data.config)
+      if (verification) {
+        setSubmitAlert(verification)
+        return
+      }
+
+      await submitValidatedInput(parsed.data)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not create this local folder.'
+      setSubmitAlert({ kind: 'verify', message })
+    } finally {
+      setIsCreatingLocalPath(false)
     }
   }
 
@@ -987,7 +1078,35 @@ export function ConnectionFormDialog({
                     : undefined
                 }
               >
-                {submitAlert.message}
+                <div className="space-y-3">
+                  <p>{submitAlert.message}</p>
+                  {submitAlert.kind === 'verify' &&
+                  submitAlert.recovery?.kind === 'create-local-path' ? (
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        Create{' '}
+                        <span className="font-mono">
+                          {submitAlert.recovery.basePath}
+                        </span>{' '}
+                        and continue adding this drive.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          void handleCreateLocalPathAndContinue()
+                        }}
+                        disabled={
+                          isCreatingLocalPath || !ensureLocalPathBeforeCreate
+                        }
+                      >
+                        {isCreatingLocalPath
+                          ? 'Creating folder...'
+                          : 'Create folder and continue'}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
               </AlertDescription>
             </Alert>
           ) : null}

@@ -72,6 +72,7 @@
     "@types/node": "25.6.0",
     "@types/react": "19.2.0",
     "@types/react-dom": "19.2.0",
+    "@types/react-virtualized": "^9.22.3",
     "@vitejs/plugin-react": "6.0.1",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "17.4.2",

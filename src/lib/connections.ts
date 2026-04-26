@@ -100,6 +100,22 @@ export const testConnectionConfigInputSchema = z.object({
   config: connectionConfigSchema,
 })
 
+export const testConnectionConfigResultSchema = z.discriminatedUnion('ok', [
+  z.object({
+    ok: z.literal(true),
+  }),
+  z.object({
+    ok: z.literal(false),
+    code: z.literal('local_path_not_found'),
+    message: z.string(),
+    basePath: z.string(),
+  }),
+])
+
+export const ensureLocalPathInputSchema = z.object({
+  basePath: trimmedString.min(1, 'Base path is required.'),
+})
+
 export type ConnectionMetadataInput = z.infer<typeof connectionMetadataSchema>
 export type S3Config = z.infer<typeof s3ConfigSchema>
 export type LocalConfig = z.infer<typeof localConfigSchema>
@@ -117,3 +133,6 @@ export type ClientConnectionConfig = z.infer<
 >
 export type ConnectionListItem = z.infer<typeof connectionListItemSchema>
 export type PermissionAccess = z.infer<typeof permissionAccessSchema>
+export type TestConnectionConfigResult = z.infer<
+  typeof testConnectionConfigResultSchema
+>

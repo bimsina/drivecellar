@@ -1,6 +1,7 @@
 import { createReadStream, createWriteStream, type ReadStream } from 'node:fs'
 import {
   mkdir as mkdirAsync,
+  realpath,
   readdir,
   rename as renameAsync,
   rm,
@@ -15,7 +16,13 @@ import mime from 'mime'
 
 import type { LocalConfig } from '#/lib/connections.ts'
 
-import type { FileEntry, ListResult, StorageProvider } from './types.ts'
+import type {
+  FileEntry,
+  ListResult,
+  StorageProvider,
+  WriteFileOptions,
+} from './types.ts'
+import { StorageProviderError, toStorageProviderError } from './errors.ts'
 import { PathError } from './path-utils.ts'
 
 function toFsPath(basePath: string, normalizedPath: string): string {
@@ -35,12 +42,45 @@ function assertWithinBase(basePath: string, fsPath: string) {
   }
 }
 
+function isWithinBase(basePath: string, fsPath: string) {
+  const relative = path.relative(basePath, fsPath)
+  return (
+    relative === '' ||
+    (!relative.startsWith('..') && !path.isAbsolute(relative))
+  )
+}
+
+function hasFsErrorCode(error: unknown, code: string) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    Reflect.get(error, 'code') === code
+  )
+}
+
 function getMimeType(fileName: string): string | null {
   return mime.getType(fileName)
 }
 
+function toFileEntry(
+  name: string,
+  entryPath: string,
+  st: Awaited<ReturnType<typeof stat>>,
+): FileEntry {
+  const isDirectory = st.isDirectory()
+  return {
+    name,
+    path: entryPath,
+    isDirectory,
+    size: isDirectory ? null : Number(st.size),
+    mimeType: isDirectory ? null : getMimeType(name),
+    lastModified: st.mtime,
+  }
+}
+
 export function createLocalProvider(config: LocalConfig): StorageProvider {
   const basePath = path.resolve(config.basePath)
+  let baseRealPathPromise: Promise<string> | null = null
 
   async function pathToFs(normalizedPath: string) {
     const fsPath = toFsPath(basePath, normalizedPath)
@@ -48,113 +88,224 @@ export function createLocalProvider(config: LocalConfig): StorageProvider {
     return fsPath
   }
 
+  async function getBaseRealPath() {
+    baseRealPathPromise ??= realpath(basePath).catch((error: unknown) => {
+      baseRealPathPromise = null
+      throw toStorageProviderError(error)
+    })
+    return baseRealPathPromise
+  }
+
+  async function assertRealPathWithinBase(fsPath: string) {
+    const [baseRealPath, targetRealPath] = await Promise.all([
+      getBaseRealPath(),
+      realpath(fsPath),
+    ])
+
+    if (!isWithinBase(baseRealPath, targetRealPath)) {
+      throw new StorageProviderError('path_escape')
+    }
+
+    return targetRealPath
+  }
+
+  async function existingPathToFs(normalizedPath: string) {
+    const fsPath = await pathToFs(normalizedPath)
+    await assertRealPathWithinBase(fsPath)
+    return fsPath
+  }
+
+  async function assertNearestExistingParentWithinBase(fsPath: string) {
+    const baseRealPath = await getBaseRealPath()
+    let current = fsPath
+
+    for (;;) {
+      try {
+        const currentRealPath = await realpath(current)
+        if (!isWithinBase(baseRealPath, currentRealPath)) {
+          throw new StorageProviderError('path_escape')
+        }
+        return
+      } catch (error) {
+        if (error instanceof StorageProviderError) {
+          throw error
+        }
+        if (hasFsErrorCode(error, 'ENOENT')) {
+          const parent = path.dirname(current)
+          if (parent === current) {
+            throw toStorageProviderError(error)
+          }
+          current = parent
+          continue
+        }
+        throw toStorageProviderError(error)
+      }
+    }
+  }
+
+  async function prepareWritablePath(normalizedPath: string) {
+    const fsPath = await pathToFs(normalizedPath)
+    try {
+      await assertRealPathWithinBase(fsPath)
+    } catch (error) {
+      if (hasFsErrorCode(error, 'ENOENT')) {
+        await assertNearestExistingParentWithinBase(path.dirname(fsPath))
+        return fsPath
+      }
+      if (error instanceof StorageProviderError && error.code === 'not_found') {
+        await assertNearestExistingParentWithinBase(path.dirname(fsPath))
+        return fsPath
+      }
+      throw error
+    }
+    return fsPath
+  }
+
+  async function listDirectory(
+    dirPath: string,
+    onEntry?: (entry: FileEntry) => Promise<void>,
+  ) {
+    const dirFs = await existingPathToFs(dirPath)
+    const st = await stat(dirFs).catch(() => null)
+    if (!st || !st.isDirectory()) {
+      throw new StorageProviderError('not_a_directory')
+    }
+
+    const names = await readdir(dirFs)
+    const entries: FileEntry[] = []
+
+    for (const name of names) {
+      const childFs = path.join(dirFs, name)
+      const childPath = dirPath === '/' ? `/${name}` : `${dirPath}/${name}`
+
+      try {
+        await assertRealPathWithinBase(childFs)
+        const childStat = await stat(childFs)
+        const entry = toFileEntry(name, childPath, childStat)
+        entries.push(entry)
+        await onEntry?.(entry)
+      } catch (error) {
+        if (
+          error instanceof StorageProviderError &&
+          error.code === 'path_escape'
+        ) {
+          continue
+        }
+        if (hasFsErrorCode(error, 'ENOENT')) {
+          continue
+        }
+        throw error
+      }
+    }
+
+    entries.sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) {
+        return a.isDirectory ? -1 : 1
+      }
+      return a.name.localeCompare(b.name)
+    })
+
+    return { path: dirPath, entries }
+  }
+
   return {
     async list(dirPath: string): Promise<ListResult> {
-      const dirFs = await pathToFs(dirPath)
-      const st = await stat(dirFs).catch(() => null)
-      if (!st || !st.isDirectory()) {
-        throw new Error('Not a directory.')
+      try {
+        return await listDirectory(dirPath)
+      } catch (error) {
+        throw toStorageProviderError(error)
       }
-
-      const names = await readdir(dirFs)
-      const entries: FileEntry[] = []
-
-      for (const name of names) {
-        const childFs = path.join(dirFs, name)
-        const childStat = await stat(childFs)
-        const childPath = dirPath === '/' ? `/${name}` : `${dirPath}/${name}`
-        const isDirectory = childStat.isDirectory()
-        entries.push({
-          name,
-          path: childPath,
-          isDirectory,
-          size: isDirectory ? null : childStat.size,
-          mimeType: isDirectory ? null : getMimeType(name),
-          lastModified: childStat.mtime,
-        })
-      }
-
-      entries.sort((a, b) => {
-        if (a.isDirectory !== b.isDirectory) {
-          return a.isDirectory ? -1 : 1
-        }
-        return a.name.localeCompare(b.name)
-      })
-
-      return { path: dirPath, entries }
     },
 
     async stat(entryPath: string): Promise<FileEntry> {
-      if (entryPath === '/') {
-        const st = await stat(basePath)
-        return {
-          name: path.basename(basePath),
-          path: '/',
-          isDirectory: true,
-          size: null,
-          mimeType: null,
-          lastModified: st.mtime,
-        }
-      }
-
-      const fsPath = await pathToFs(entryPath)
-      const st = await stat(fsPath)
-      const name = path.basename(fsPath)
-      const isDirectory = st.isDirectory()
-      return {
-        name,
-        path: entryPath,
-        isDirectory,
-        size: isDirectory ? null : st.size,
-        mimeType: isDirectory ? null : getMimeType(name),
-        lastModified: st.mtime,
+      try {
+        const fsPath =
+          entryPath === '/'
+            ? await existingPathToFs('/')
+            : await existingPathToFs(entryPath)
+        const st = await stat(fsPath)
+        const name =
+          entryPath === '/' ? path.basename(basePath) : path.basename(fsPath)
+        return toFileEntry(name, entryPath, st)
+      } catch (error) {
+        throw toStorageProviderError(error)
       }
     },
 
     async mkdir(dirPath: string): Promise<void> {
-      const fsPath = await pathToFs(dirPath)
-      await mkdirAsync(fsPath, { recursive: true })
+      try {
+        const fsPath = await prepareWritablePath(dirPath)
+        await mkdirAsync(fsPath, { recursive: true })
+        await assertRealPathWithinBase(fsPath)
+      } catch (error) {
+        throw toStorageProviderError(error)
+      }
     },
 
     async delete(entryPath: string): Promise<void> {
-      const fsPath = await pathToFs(entryPath)
-      const st = await stat(fsPath)
-      await rm(fsPath, { recursive: st.isDirectory() })
+      try {
+        const fsPath = await existingPathToFs(entryPath)
+        const st = await stat(fsPath)
+        await rm(fsPath, { recursive: st.isDirectory() })
+      } catch (error) {
+        throw toStorageProviderError(error)
+      }
     },
 
     async rename(oldPath: string, newPath: string): Promise<void> {
-      const from = await pathToFs(oldPath)
-      const to = await pathToFs(newPath)
-      await renameAsync(from, to)
+      try {
+        const from = await existingPathToFs(oldPath)
+        const to = await prepareWritablePath(newPath)
+        await mkdirAsync(path.dirname(to), { recursive: true })
+        await assertRealPathWithinBase(path.dirname(to))
+        await renameAsync(from, to)
+        await assertRealPathWithinBase(to)
+      } catch (error) {
+        throw toStorageProviderError(error)
+      }
     },
 
     async getReadStream(
       entryPath: string,
       options,
     ): Promise<ReadableStream<Uint8Array>> {
-      const fsPath = await pathToFs(entryPath)
-      const st = await stat(fsPath)
-      if (st.isDirectory()) {
-        throw new Error('Cannot read a directory as a file.')
+      try {
+        const fsPath = await existingPathToFs(entryPath)
+        const st = await stat(fsPath)
+        if (st.isDirectory()) {
+          throw new StorageProviderError(
+            'not_a_directory',
+            'Cannot read a directory as a file.',
+          )
+        }
+        const nodeStream: ReadStream = createReadStream(fsPath, {
+          start: options?.range?.start,
+          end: options?.range?.end,
+        })
+        return Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>
+      } catch (error) {
+        throw toStorageProviderError(error)
       }
-      const nodeStream: ReadStream = createReadStream(fsPath, {
-        start: options?.range?.start,
-        end: options?.range?.end,
-      })
-      return Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>
     },
 
     async getFileMetadata(entryPath: string) {
-      const fsPath = await pathToFs(entryPath)
-      const st = await stat(fsPath)
-      if (st.isDirectory()) {
-        throw new Error('Path is a directory.')
-      }
-      const fileName = path.basename(fsPath)
-      return {
-        size: st.size,
-        mimeType: getMimeType(fileName),
-        fileName,
+      try {
+        const fsPath = await existingPathToFs(entryPath)
+        const st = await stat(fsPath)
+        if (st.isDirectory()) {
+          throw new StorageProviderError(
+            'not_a_directory',
+            'Path is a directory.',
+          )
+        }
+        const fileName = path.basename(fsPath)
+        return {
+          size: st.size,
+          mimeType: getMimeType(fileName),
+          fileName,
+        }
+      } catch (error) {
+        throw toStorageProviderError(error)
       }
     },
 
@@ -162,22 +313,59 @@ export function createLocalProvider(config: LocalConfig): StorageProvider {
       entryPath: string,
       stream: ReadableStream<Uint8Array>,
       _size?: number,
+      options?: WriteFileOptions,
     ): Promise<FileEntry> {
-      const fsPath = await pathToFs(entryPath)
-      await mkdirAsync(path.dirname(fsPath), { recursive: true })
-      const nodeReadable = Readable.fromWeb(stream as NodeWebReadableStream)
-      const writeStream = createWriteStream(fsPath)
-      await pipeline(nodeReadable, writeStream)
-      const st = await stat(fsPath)
-      const name = path.basename(fsPath)
-      return {
-        name,
-        path: entryPath,
-        isDirectory: false,
-        size: st.size,
-        mimeType: getMimeType(name),
-        lastModified: st.mtime,
+      try {
+        const fsPath = await prepareWritablePath(entryPath)
+        await mkdirAsync(path.dirname(fsPath), { recursive: true })
+        await assertRealPathWithinBase(path.dirname(fsPath))
+        const nodeReadable = Readable.fromWeb(stream as NodeWebReadableStream)
+        const writeStream = createWriteStream(fsPath, {
+          flags: options?.overwrite === false ? 'wx' : 'w',
+        })
+        await pipeline(nodeReadable, writeStream)
+        await assertRealPathWithinBase(fsPath)
+        const st = await stat(fsPath)
+        const name = path.basename(fsPath)
+        return toFileEntry(name, entryPath, st)
+      } catch (error) {
+        throw toStorageProviderError(error)
       }
     },
+
+    async walk(signal, onEntry): Promise<void> {
+      async function walkDirectory(dirPath: string) {
+        signal.throwIfAborted()
+        const result = await listDirectory(dirPath)
+
+        for (const entry of result.entries) {
+          signal.throwIfAborted()
+          await onEntry(entry)
+          if (entry.isDirectory) {
+            await walkDirectory(entry.path)
+          }
+        }
+      }
+
+      try {
+        await getBaseRealPath()
+        await walkDirectory('/')
+      } catch (error) {
+        throw toStorageProviderError(error)
+      }
+    },
+  }
+}
+
+export async function ensureLocalBasePath(basePath: string): Promise<void> {
+  try {
+    const resolvedBasePath = path.resolve(basePath)
+    await mkdirAsync(resolvedBasePath, { recursive: true })
+    const st = await stat(resolvedBasePath)
+    if (!st.isDirectory()) {
+      throw new StorageProviderError('not_a_directory')
+    }
+  } catch (error) {
+    throw toStorageProviderError(error)
   }
 }

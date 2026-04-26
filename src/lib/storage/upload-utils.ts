@@ -1,5 +1,6 @@
 import { normalizePath, PathError } from './path-utils.ts'
 import type { StorageProvider } from './types.ts'
+import { isAlreadyExistsError } from './errors.ts'
 
 export type UploadConflictMode = 'rename'
 export type UploadConflictResolution = 'none' | 'renamed'
@@ -115,5 +116,45 @@ export async function resolveUploadPathConflict(
     }
 
     attempt += 1
+  }
+}
+
+export async function writeFileWithConflictResolution(
+  provider: StorageProvider,
+  requestedPath: string,
+  createStream: () => ReadableStream<Uint8Array>,
+  size?: number,
+  conflictMode: UploadConflictMode = 'rename',
+): Promise<{
+  entry: Awaited<ReturnType<StorageProvider['writeFile']>>
+  resolvedPath: string
+  conflictResolution: UploadConflictResolution
+}> {
+  let attempt = 0
+
+  for (;;) {
+    const resolvedPath =
+      attempt === 0
+        ? requestedPath
+        : appendConflictSuffix(requestedPath, attempt)
+
+    try {
+      const entry = await provider.writeFile(
+        resolvedPath,
+        createStream(),
+        size,
+        { overwrite: false },
+      )
+      return {
+        entry,
+        resolvedPath,
+        conflictResolution: attempt === 0 ? 'none' : 'renamed',
+      }
+    } catch (error) {
+      if (!isAlreadyExistsError(error) || conflictMode !== 'rename') {
+        throw error
+      }
+      attempt += 1
+    }
   }
 }

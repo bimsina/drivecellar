@@ -483,7 +483,7 @@ export function FileExplorer({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              <div className="border-border/70 bg-card/86 flex flex-col gap-3 rounded-sm border px-3 py-3 shadow-sm shadow-black/[0.02] lg:px-4">
+              <div className="border-border/70 bg-card/86 flex flex-col gap-3 rounded-sm border px-3 py-3 shadow-sm shadow-black/2 lg:px-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
                     <h1 className="text-foreground truncate text-base font-semibold">

@@ -1,15 +1,11 @@
-import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3'
 import { and, eq, lt } from 'drizzle-orm'
-import { readdir, stat } from 'node:fs/promises'
-import path from 'node:path'
-
-import mime from 'mime'
 
 import { db } from '#/db/index.ts'
 import { fileIndex, indexRuns, indexStatus } from '#/db/schema/index.ts'
 import { parseConnectionConfig } from '#/lib/connection-config-storage.ts'
 import { getConnectionByIdForOrganization } from '#/lib/connection-repository.ts'
 import { computeParentPath, normalizePath } from '#/lib/storage/path-utils.ts'
+import { createStorageProvider } from '#/lib/storage/registry.ts'
 
 import {
   cancelIndexJob,
@@ -25,16 +21,6 @@ import type {
   IndexScanCounts,
   IndexedEntry,
 } from './types.ts'
-
-type S3ScanConfig = {
-  endpoint: string
-  region?: string
-  accessKeyId: string
-  secretAccessKey: string
-  bucket: string
-  pathStyle: boolean
-  prefix?: string
-}
 
 type StartIndexJobOptions = {
   trigger?: IndexRunTrigger
@@ -65,61 +51,6 @@ function logIndexingError(event: string, details?: Record<string, unknown>) {
     return
   }
   console.error(`[indexing] ${event}`)
-}
-
-function normalizeStorePrefix(prefix: string | undefined): string {
-  if (!prefix?.trim()) {
-    return ''
-  }
-
-  return prefix.trim().replace(/^\//, '').replace(/\/$/, '')
-}
-
-function shouldForcePathStyle(config: S3ScanConfig): boolean {
-  if (config.pathStyle) {
-    return true
-  }
-
-  try {
-    const { hostname } = new URL(config.endpoint)
-
-    return (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '::1' ||
-      hostname.endsWith('.localhost') ||
-      hostname.includes('minio')
-    )
-  } catch {
-    return config.pathStyle
-  }
-}
-
-function toAbsolutePathFromS3Key(key: string, storePrefix: string) {
-  if (!key) {
-    return null
-  }
-
-  let relativeKey = key
-
-  if (storePrefix) {
-    if (key === storePrefix) {
-      return null
-    }
-
-    const expectedPrefix = `${storePrefix}/`
-    if (!key.startsWith(expectedPrefix)) {
-      return null
-    }
-
-    relativeKey = key.slice(expectedPrefix.length)
-  }
-
-  if (!relativeKey) {
-    return null
-  }
-
-  return normalizePath(`/${relativeKey}`)
 }
 
 function pathName(pathValue: string) {
@@ -227,136 +158,6 @@ async function finalizeIndexRun(args: {
       updatedAt: args.finishedAt,
     })
     .where(eq(indexRuns.id, args.runId))
-}
-
-async function scanS3Connection(
-  config: S3ScanConfig,
-  signal: AbortSignal,
-  onEntry: (entry: IndexedEntry) => Promise<void>,
-) {
-  const client = new S3Client({
-    region: config.region?.trim() || 'us-east-1',
-    endpoint: config.endpoint,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-    forcePathStyle: shouldForcePathStyle(config),
-  })
-
-  const storePrefix = normalizeStorePrefix(config.prefix)
-  const basePrefix = storePrefix ? `${storePrefix}/` : undefined
-
-  let continuationToken: string | undefined
-
-  do {
-    signal.throwIfAborted()
-
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: config.bucket,
-        Prefix: basePrefix,
-        ContinuationToken: continuationToken,
-      }),
-      { abortSignal: signal },
-    )
-
-    for (const object of response.Contents ?? []) {
-      signal.throwIfAborted()
-
-      const key = object.Key
-      if (!key) {
-        continue
-      }
-
-      const absolutePath = toAbsolutePathFromS3Key(key, storePrefix)
-      if (!absolutePath || absolutePath === '/') {
-        continue
-      }
-
-      const isDirectory = key.endsWith('/')
-      const normalizedPath = isDirectory
-        ? normalizePath(absolutePath.replace(/\/+$/, ''))
-        : absolutePath
-
-      if (normalizedPath === '/') {
-        continue
-      }
-
-      const name = pathName(normalizedPath)
-      if (!name) {
-        continue
-      }
-
-      await onEntry({
-        name,
-        path: normalizedPath,
-        isDirectory,
-        size: isDirectory ? null : (object.Size ?? null),
-        mimeType: isDirectory ? null : mime.getType(name),
-        lastModified: object.LastModified ?? null,
-      })
-    }
-
-    continuationToken = response.IsTruncated
-      ? response.NextContinuationToken
-      : undefined
-  } while (continuationToken)
-}
-
-async function scanLocalConnection(
-  basePath: string,
-  signal: AbortSignal,
-  onEntry: (entry: IndexedEntry) => Promise<void>,
-) {
-  const rootPath = path.resolve(basePath)
-
-  async function walkDirectory(fsDirPath: string, absoluteDirPath: string) {
-    signal.throwIfAborted()
-
-    const entries = await readdir(fsDirPath, { withFileTypes: true })
-
-    for (const entry of entries) {
-      signal.throwIfAborted()
-
-      const childFsPath = path.join(fsDirPath, entry.name)
-      const childAbsolutePath =
-        absoluteDirPath === '/'
-          ? `/${entry.name}`
-          : `${absoluteDirPath}/${entry.name}`
-
-      if (entry.isDirectory()) {
-        const dirStat = await stat(childFsPath)
-
-        await onEntry({
-          name: entry.name,
-          path: childAbsolutePath,
-          isDirectory: true,
-          size: null,
-          mimeType: null,
-          lastModified: dirStat.mtime,
-        })
-
-        await walkDirectory(childFsPath, childAbsolutePath)
-        continue
-      }
-
-      if (entry.isFile()) {
-        const fileStat = await stat(childFsPath)
-
-        await onEntry({
-          name: entry.name,
-          path: childAbsolutePath,
-          isDirectory: false,
-          size: fileStat.size,
-          mimeType: mime.getType(entry.name),
-          lastModified: fileStat.mtime,
-        })
-      }
-    }
-  }
-
-  await walkDirectory(rootPath, '/')
 }
 
 async function runFullScan(job: IndexJobState) {
@@ -489,15 +290,8 @@ async function runFullScan(job: IndexJobState) {
       configType: config.type,
     })
 
-    if (config.type === 's3') {
-      await scanS3Connection(config, job.abortController.signal, queueEntry)
-    } else {
-      await scanLocalConnection(
-        config.basePath,
-        job.abortController.signal,
-        queueEntry,
-      )
-    }
+    const provider = createStorageProvider(config)
+    await provider.walk(job.abortController.signal, queueEntry)
 
     await flushBuffer()
 

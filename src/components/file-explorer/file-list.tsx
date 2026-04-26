@@ -80,7 +80,7 @@ import {
   isImageEntry,
 } from './preview-utils'
 
-const LIST_VIRTUAL_ROW_HEIGHT = 56
+const LIST_VIRTUAL_ROW_HEIGHT = 64
 const GRID_FOLDER_CARD_HEIGHT = 78
 const GRID_FILE_CARD_HEIGHT = 168
 const GRID_SECTION_HEADER_HEIGHT = 36
@@ -239,7 +239,6 @@ type BaseEntryProps = {
 }
 
 function FolderCard({
-  connectionId,
   entry,
   tags,
   isSelected,
@@ -325,7 +324,7 @@ function FileCard({
             {shortLabel}
             {entry.size !== null ? ` · ${formatBytes(entry.size)}` : ''}
           </p>
-          <TagBadges tags={tags} size="sm" maxVisible={2} className="mt-2" />
+          <TagBadges tags={tags} size="sm" maxVisible={2} />
         </div>
       </div>
 
@@ -921,7 +920,7 @@ export function FileList({
         <div
           key={key}
           style={style}
-          className="h-[64px] overflow-hidden px-1 py-1"
+          className="box-border h-full overflow-hidden px-1 py-1"
         >
           {rowForEntry(entry)}
         </div>
@@ -1306,6 +1305,7 @@ export function FileList({
 
                         return (
                           <VirtualizedList
+                            key={`grid-${columns}`}
                             autoHeight
                             width={width}
                             height={height}
@@ -1336,6 +1336,7 @@ export function FileList({
 
                       return (
                         <VirtualizedList
+                          key="list"
                           autoHeight
                           width={width}
                           height={height}

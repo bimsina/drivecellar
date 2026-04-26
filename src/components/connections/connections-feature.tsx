@@ -96,6 +96,9 @@ export function ConnectionsFeature({
   const testConnectionMutation = useMutation(
     trpc.connections.testConfig.mutationOptions(),
   )
+  const ensureLocalPathMutation = useMutation(
+    trpc.connections.ensureLocalPath.mutationOptions(),
+  )
 
   function assertCanManageConnections() {
     if (!canManageConnections) {
@@ -172,7 +175,11 @@ export function ConnectionsFeature({
         onManageIndexing={handleManageIndexing}
         testBeforeCreate={async (config) => {
           assertCanManageConnections()
-          await testConnectionMutation.mutateAsync({ config })
+          return testConnectionMutation.mutateAsync({ config })
+        }}
+        ensureLocalPathBeforeCreate={async (basePath) => {
+          assertCanManageConnections()
+          await ensureLocalPathMutation.mutateAsync({ basePath })
         }}
       />
 

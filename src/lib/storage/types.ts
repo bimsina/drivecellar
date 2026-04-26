@@ -21,6 +21,12 @@ export type ReadStreamOptions = {
   range?: ReadRange
 }
 
+export type WriteFileOptions = {
+  overwrite?: boolean
+}
+
+export type WalkEntryHandler = (entry: FileEntry) => Promise<void>
+
 export interface StorageProvider {
   list: (path: string) => Promise<ListResult>
   stat: (path: string) => Promise<FileEntry>
@@ -40,5 +46,7 @@ export interface StorageProvider {
     path: string,
     stream: ReadableStream<Uint8Array>,
     size?: number,
+    options?: WriteFileOptions,
   ) => Promise<FileEntry>
+  walk: (signal: AbortSignal, onEntry: WalkEntryHandler) => Promise<void>
 }

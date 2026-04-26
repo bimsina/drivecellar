@@ -10,7 +10,10 @@ import {
   updateConnectionRow,
 } from '#/lib/connection-repository.ts'
 import { clearCachedProvider } from '#/lib/storage/index.ts'
-import { testConnectionConfig } from '#/lib/storage/test-connection.ts'
+import {
+  ensureLocalPath,
+  testConnectionConfig,
+} from '#/lib/storage/test-connection.ts'
 import type { ConnectionRow } from '#/lib/connection-repository.ts'
 import {
   cancelRunningIndexJob,
@@ -25,9 +28,11 @@ import {
   connectionListItemSchema,
   createConnectionInputSchema,
   deleteConnectionInputSchema,
+  ensureLocalPathInputSchema,
   getConnectionInputSchema,
   listConnectionsInputSchema,
   testConnectionConfigInputSchema,
+  testConnectionConfigResultSchema,
   updateConnectionInputSchema,
 } from '#/lib/connections.ts'
 import type {
@@ -173,10 +178,10 @@ export const connectionsRouter = createTRPCRouter({
 
   testConfig: adminProcedure
     .input(testConnectionConfigInputSchema)
-    .output(z.object({ ok: z.literal(true) }))
+    .output(testConnectionConfigResultSchema)
     .mutation(async ({ input }) => {
       try {
-        await testConnectionConfig(input.config)
+        return await testConnectionConfig(input.config)
       } catch (error) {
         const message =
           error instanceof Error
@@ -187,6 +192,25 @@ export const connectionsRouter = createTRPCRouter({
           message,
         })
       }
+    }),
+
+  ensureLocalPath: adminProcedure
+    .input(ensureLocalPathInputSchema)
+    .output(z.object({ ok: z.literal(true) }))
+    .mutation(async ({ input }) => {
+      try {
+        await ensureLocalPath(input.basePath)
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Could not create this local folder.'
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message,
+        })
+      }
+
       return { ok: true as const }
     }),
 

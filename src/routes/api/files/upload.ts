@@ -9,7 +9,7 @@ import { resolveProvider } from '#/lib/storage/index.ts'
 import { PathError } from '#/lib/storage/path-utils.ts'
 import {
   buildRequestedUploadPath,
-  resolveUploadPathConflict,
+  writeFileWithConflictResolution,
   type UploadConflictMode,
 } from '#/lib/storage/upload-utils.ts'
 
@@ -81,14 +81,14 @@ export const Route = createFileRoute('/api/files/upload')({
           normalizedConnectionId,
           organizationId,
         )
-        const { resolvedPath, conflictResolution } =
-          await resolveUploadPathConflict(provider, requestedPath, conflictMode)
-
-        const entry = await provider.writeFile(
-          resolvedPath,
-          file.stream(),
-          file.size,
-        )
+        const { entry, resolvedPath, conflictResolution } =
+          await writeFileWithConflictResolution(
+            provider,
+            requestedPath,
+            () => file.stream(),
+            file.size,
+            conflictMode,
+          )
         await indexInsertEntry(normalizedConnectionId, entry)
 
         return Response.json({

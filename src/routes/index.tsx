@@ -28,7 +28,7 @@ function HomePage() {
 
   if (!user) {
     return (
-      <AppShell>
+      <AppShell showHeader={false}>
         <main className="flex min-h-0 flex-1 flex-col">
           {sessionPending ? (
             <AppLoading label="Loading session…" />

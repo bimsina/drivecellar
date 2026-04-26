@@ -11,8 +11,8 @@ function RouteComponent() {
   const { authView } = Route.useParams()
 
   return (
-    <AppShell>
-      <main className="flex min-h-[calc(100vh-9rem)] flex-1 flex-col items-center justify-center gap-4 p-4 md:p-6">
+    <AppShell showHeader={false}>
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 p-4 md:p-6">
         <div className="w-full max-w-[min(100%,28rem)]">
           <AuthView pathname={authView} />
         </div>

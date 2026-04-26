@@ -6,16 +6,21 @@ import { AppHeader } from './app-header'
 
 type AppShellProps = {
   children: ReactNode
+  showHeader?: boolean
   /** Full-width layout for main storage views */
   variant?: 'default' | 'wide'
 }
 
-export function AppShell({ children, variant = 'default' }: AppShellProps) {
+export function AppShell({
+  children,
+  showHeader = true,
+  variant = 'default',
+}: AppShellProps) {
   const wide = variant === 'wide'
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
-      <AppHeader variant={variant} />
+      {showHeader ? <AppHeader variant={variant} /> : null}
       <div
         className={cn(
           'mx-auto flex w-full flex-1',

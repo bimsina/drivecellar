@@ -1,0 +1,13 @@
+services:
+  drivecellar:
+    image: ghcr.io/bimsina/drivecellar:${DRIVECELLAR_IMAGE_TAG:-latest}
+    env_file:
+      - .env.local
+    ports:
+      - '3000:3000'
+    volumes:
+      - drivecellar-data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  drivecellar-data:

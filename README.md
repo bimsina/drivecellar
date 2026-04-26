@@ -1,208 +1,253 @@
 # DriveCellar
 
-DriveCellar is a self-hosted, multi-tenant file management app that sits on top of your existing storage.
+DriveCellar is a self-hosted file browser for storage you already own.
 
-It does **not** store files in its own blob layer. Instead, it connects to:
+Instead of uploading everything into a new platform, you point DriveCellar at your existing folders or S3-compatible storage and get a clean web app for browsing, sharing, organizing, and controlling access.
 
-- Local filesystem paths
-- S3-compatible object storage (AWS S3, MinIO, R2, etc.)
+If you want something lighter than a full cloud suite, but friendlier than managing files directly on a server or bucket, this is the gap DriveCellar is meant to fill.
 
-and provides a collaborative UI with auth, organizations, permissions, indexing, tagging, and public sharing.
+## Quick Start
+
+You can start DriveCellar without cloning this repo.
+
+### 1. Generate an env file
+
+```bash
+node -e "const fs=require('node:fs'); const crypto=require('node:crypto'); fs.writeFileSync('.env.local', ['PORT=3000','BETTER_AUTH_URL=http://localhost:3000','DATABASE_URL=/app/.data/drivecellar.db',`BETTER_AUTH_SECRET=${crypto.randomBytes(48).toString('hex')}`,`CONNECTION_ENCRYPTION_KEY=${crypto.randomBytes(32).toString('hex')}`,''].join('\n'))"
+```
+
+### 2. Run the app
+
+```bash
+docker run -d \
+  --name drivecellar \
+  -p 3000:3000 \
+  --env-file .env.local \
+  -v drivecellar-data:/app/.data \
+  ghcr.io/bimsina/drivecellar:latest
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+### No env file?
+
+If you would rather pass everything inline, use:
+
+```bash
+docker run -d \
+  --name drivecellar \
+  -p 3000:3000 \
+  -e PORT=3000 \
+  -e BETTER_AUTH_URL=http://localhost:3000 \
+  -e DATABASE_URL=/app/.data/drivecellar.db \
+  -e BETTER_AUTH_SECRET="$(openssl rand -hex 48)" \
+  -e CONNECTION_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+  -v drivecellar-data:/app/.data \
+  ghcr.io/bimsina/drivecellar:latest
+```
 
 ## What You Get
 
-### Core Storage Features
+- Browse files from a normal web UI
+- Connect local folders or S3-compatible storage
+- Search indexed files and folders
+- Organize content with tags, colors, and icons
+- Share files or folders with public links
+- Control access for different people inside a team workspace
 
-- Multiple storage connections per organization
-- Local and S3-compatible provider support
-- Browse folders/files from a unified explorer
-- File uploads with conflict-safe rename behavior
-- Direct downloads (authenticated and shared-link based)
-- Create folders, rename paths, delete files/folders
-- Optional per-item icon/color metadata in the index
+## What DriveCellar Is Not
 
-### Collaboration & Access Control
+- Not a hosted cloud storage provider
+- Not a Dropbox or Google Drive clone with its own blob store
+- Not a document editor or office suite
+- Not a media processing platform
 
-- User auth with Better Auth
-- Organization/team model with active organization context
-- Roles: `owner`, `admin`, `member`
-- Permission layers:
-  - Connection default access (`editor` / `viewer` / `none`)
-  - Per-user connection overrides
-  - Per-user folder-scoped overrides
-- Permission-aware explorer visibility (including descendant-folder grants)
+## First-Time Setup
 
-### Search & Discovery
+After the container starts:
 
-- Indexed search across one or more connections
-- Search by:
-  - Query text (name/path)
-  - Connection(s)
-  - Tag(s)
-  - Color(s)
-  - Optional path prefix/scope
-- Command-palette style search UI (`Cmd/Ctrl + K`)
+1. Create your first account.
+2. Create a team workspace.
+3. Add a storage connection.
+4. Start indexing and begin browsing.
 
-### Indexing
+## Slightly More Structured Setup
 
-- Background full scans per connection (manual + auto trigger)
-- Tracks index status and run history
-- Cancellation support for running jobs
-- Incremental inline index updates on create/rename/delete/upload actions
-- Stores file/folder counts and total size summaries
+If you prefer using Docker Compose instead of one long command, the repo includes a compose file that pulls the published image from GHCR.
 
-### Tags
-
-- Organization-wide tag catalog (name + color)
-- Assign/unassign tags to indexed files/folders
-- Tag CRUD with creator/admin protection rules
-- Use tags as search filters
-
-### Shared Links
-
-- Create links for files or directories
-- Optional password protection
-- Optional expiration
-- Enable/disable and revoke links
-- Public browsing for shared folders + direct file download endpoint
-
-## Tech Stack
-
-- **Framework**: TanStack Start + React 19 + TanStack Router
-- **API layer**: tRPC v11
-- **DB/ORM**: SQLite + Drizzle ORM (`better-sqlite3`)
-- **Auth**: Better Auth (with organization plugin)
-- **Styling/UI**: Tailwind CSS v4 + Radix-style component primitives
-- **Validation**: Zod
-- **State/query**: TanStack Query + Zustand
-
-## Project Structure
-
-- `src/routes` - file routes (pages + API handlers)
-- `src/integrations/trpc` - tRPC context/router/procedures
-- `src/lib/storage` - storage provider abstraction + local/S3 adapters
-- `src/lib/indexing` - full-scan jobs, inline updates, index queries
-- `src/lib/permissions.ts` - access resolution logic
-- `src/lib/shared-links.ts` - token/password/expiry resolution
-- `src/db/schema` - Drizzle schema (auth, connections, index, permissions, tags)
-
-## Environment Variables
-
-Required server env vars (validated in `src/lib/env.ts`):
+### 1. Create an env file
 
 ```bash
-DATABASE_URL=./dev.db
-BETTER_AUTH_SECRET=replace-with-a-long-random-secret
-CONNECTION_ENCRYPTION_KEY=replace-with-a-32-plus-char-secret
+cp .env.example .env.local
 ```
 
-Notes:
+Then replace the placeholder secrets in `.env.local`.
 
-- `DATABASE_URL` points to your SQLite file.
-- `CONNECTION_ENCRYPTION_KEY` is used to encrypt S3 credentials at rest in DB JSON.
-- `BETTER_AUTH_SECRET` secures auth/session crypto.
+### 2. Start the app
 
-## Local Development
+```bash
+docker compose up -d
+```
 
-### 1. Prerequisites
+### 3. Open the app
 
-- Node.js `22.22.0` (from `.node-version`)
-- `pnpm`
+Visit [http://localhost:3000](http://localhost:3000).
 
-### 2. Install
+By default, Compose uses:
+
+- the published image `ghcr.io/bimsina/drivecellar:latest`
+- a persistent Docker volume for app data
+
+To pin a specific version:
+
+```bash
+DRIVECELLAR_IMAGE_TAG=v0.1.0 docker compose up -d
+```
+
+## What It Does
+
+### Storage
+
+- Connect local filesystem paths
+- Connect S3-compatible storage such as AWS S3, MinIO, or Cloudflare R2
+- Manage multiple storage connections per organization
+
+### File Management
+
+- Browse folders and files
+- Upload files
+- Download files
+- Create folders
+- Rename files and folders
+- Delete files and folders
+
+### Collaboration
+
+- Email/password sign-in
+- Team workspace model
+- Roles: `owner`, `admin`, `member`
+- Connection-level default access
+- Per-user connection overrides
+- Folder-scoped per-user overrides
+
+### Organization
+
+- Indexed search
+- Tags
+- Optional colors and icons for indexed items
+- Public share links with expiration and password support
+
+## How It Works
+
+DriveCellar keeps app data in SQLite, but your files stay in the storage you connect.
+
+It indexes metadata like file names, paths, sizes, and types so the UI can search and browse quickly. When someone opens, downloads, uploads, or shares a file, DriveCellar checks permissions in the app layer and then performs the action against the connected storage backend.
+
+## Published Image
+
+- Repository: [github.com/bimsina/drivecellar](https://github.com/bimsina/drivecellar)
+- Image: `ghcr.io/bimsina/drivecellar:<tag>`
+- Default port: `3000`
+
+Required environment variables:
+
+- `DATABASE_URL`
+- `BETTER_AUTH_URL`
+- `BETTER_AUTH_SECRET`
+- `CONNECTION_ENCRYPTION_KEY`
+
+Example with an env file:
+
+```bash
+docker run \
+  --name drivecellar \
+  --publish 3000:3000 \
+  --env-file .env.local \
+  --volume drivecellar-data:/app/.data \
+  ghcr.io/bimsina/drivecellar:v0.1.0
+```
+
+## Build From Source
+
+If you want to build the image from a local checkout instead of pulling from GHCR:
+
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### 3. Configure env
-
-Create `.env.local` (or `.env`) with the required variables above.
-
-### 4. Prepare database
+### 2. Generate local secrets
 
 ```bash
-pnpm db:generate
-pnpm db:migrate
+pnpm setup:env
 ```
 
-(Use `pnpm db:push` for schema push workflows if preferred.)
-
-### 5. Start app
+### 3. Build and run with Compose
 
 ```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+```
+
+## Local Development
+
+```bash
+pnpm install
+pnpm setup:env
+pnpm db:migrate
 pnpm dev
 ```
 
-App runs on `http://localhost:3000`.
+The app runs at [http://localhost:3000](http://localhost:3000).
 
-## Scripts
+To preview the production build locally:
 
-- `pnpm dev` - start dev server
-- `pnpm build` - production build
-- `pnpm preview` - preview built output
-- `pnpm lint` - eslint
-- `pnpm format` - prettier write
-- `pnpm check` - prettier + eslint fix
-- `pnpm db:generate` - drizzle migration generation
-- `pnpm db:migrate` - apply migrations
-- `pnpm db:push` - push schema directly
-- `pnpm db:pull` - pull schema from DB
+```bash
+pnpm build
+pnpm preview
+```
+
+## Useful Scripts
+
+- `pnpm dev` - start the development server
+- `pnpm build` - build the Nitro production output
+- `pnpm start` - run the Nitro Node server from `.output/server/index.mjs`
+- `pnpm preview` - locally preview the production build
+- `pnpm setup:env` - generate `.env.local`
+- `pnpm db:migrate` - apply committed Drizzle migrations
+- `pnpm db:generate` - generate a new migration from schema changes
+- `pnpm db:push` - push schema changes directly to SQLite
 - `pnpm db:studio` - open Drizzle Studio
-- `pnpm auth:generate` - regenerate Better Auth schema file
+- `pnpm lint` - run ESLint
 
-## Data Model Overview
+## Tech Stack
 
-Key schema groups:
+- TanStack Start
+- React 19
+- TanStack Router
+- tRPC
+- SQLite with `better-sqlite3`
+- Drizzle ORM
+- Better Auth
+- Tailwind CSS v4
+- Zod
 
-- **Auth/Org**: users, sessions, organizations, members, invitations
-- **Connections**: storage connection metadata + encrypted provider config
-- **Permissions**:
-  - `connection_permissions`
-  - `folder_permissions`
-  - `shared_links`
-- **Indexing**:
-  - `file_index`
-  - `index_status`
-  - `index_runs`
-- **Tags**:
-  - `tags`
-  - `file_tags`
+## Repository Guide
 
-## API Surface (High-Level)
+- `src/routes` - UI routes and HTTP handlers
+- `src/integrations/trpc` - tRPC context and routers
+- `src/lib/storage` - local and S3 provider implementations
+- `src/lib/indexing` - indexing jobs and index queries
+- `src/lib/permissions.ts` - effective access resolution
+- `src/lib/shared-links.ts` - shared-link access logic
+- `src/db/schema` - Drizzle schema definitions
+- `drizzle` - committed SQL migrations
+- `docker` - container entrypoint assets
+- `.output` - Nitro build output
 
-### HTTP routes
+## Notes
 
-- `/api/auth/*` - Better Auth handlers
-- `/api/trpc/*` - typed tRPC endpoint
-- `/api/files/upload` - multipart upload endpoint
-- `/api/files/download` - authenticated download endpoint
-- `/api/share/download` - shared-link download endpoint
-
-### tRPC routers
-
-- `connections` - create/update/delete/list/test connection configs
-- `files` - list/search/stat/mkdir/rename/delete/update metadata
-- `indexing` - start/cancel/status/runs/count
-- `permissions` - connection/folder access management + my access
-- `sharedLinks` - create/list/update/remove/resolve public links
-- `tags` - tag CRUD + assignment/listing for files
-
-## Security Notes
-
-- Path normalization prevents traversal outside connection roots.
-- Local provider enforces base-path confinement.
-- S3 credentials are encrypted before DB persistence.
-- Shared-link passwords are stored as salted `scrypt` hashes.
-- Read/write operations are permission-checked against resolved access.
-
-## Current Status
-
-This repository is actively under development. The existing implementation already includes end-to-end core flows for:
-
-- auth + organizations
-- storage connection management
-- indexed file browsing/search
-- permissions
-- tags
-- shared links
+- Local storage providers are confined to their configured base path.
+- S3 credentials are encrypted before being stored in SQLite.
+- Shared-link passwords are stored as salted hashes.
+- This repository is MIT licensed. See [LICENSE.md](./LICENSE.md).

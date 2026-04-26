@@ -6,6 +6,8 @@ Instead of uploading everything into a new platform, you point DriveCellar at yo
 
 If you want something lighter than a full cloud suite, but friendlier than managing files directly on a server or bucket, this is the gap DriveCellar is meant to fill.
 
+https://github.com/user-attachments/assets/a390a4a7-3171-400b-a1b1-403d47f0a138
+
 ## Quick Start
 
 You can start DriveCellar without cloning this repo.

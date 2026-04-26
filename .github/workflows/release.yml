@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -51,6 +51,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -58,3 +59,40 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Write release notes
+        env:
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_TAG: ${{ github.ref_name }}
+        run: |
+          cat <<EOF > release-notes.md
+          ## Container Image
+
+          - Image: \`${IMAGE_REPOSITORY}:${IMAGE_TAG}\`
+          - Digest: \`${IMAGE_DIGEST}\`
+          - Platforms: \`linux/amd64\`, \`linux/arm64\`
+
+          Pull the tagged image:
+
+          \`\`\`bash
+          docker pull ${IMAGE_REPOSITORY}:${IMAGE_TAG}
+          \`\`\`
+
+          Run the image:
+
+          \`\`\`bash
+          docker run \\
+            --name drivecellar \\
+            --publish 3000:3000 \\
+            --env-file .env.local \\
+            --volume drivecellar-data:/app/.data \\
+            ${IMAGE_REPOSITORY}:${IMAGE_TAG}
+          \`\`\`
+          EOF
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          generate_release_notes: true

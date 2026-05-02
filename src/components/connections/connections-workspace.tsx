@@ -60,38 +60,40 @@ export function ConnectionsWorkspace({
 
   return (
     <>
-      <main className="mx-auto flex w-full min-w-0 flex-1 flex-col gap-4">
-        <ConnectionsGrid
-          canManageConnections={canManageConnections}
-          connections={connections}
-          errorMessage={errorMessage}
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
-          onCreate={() => {
-            if (!canManageConnections) {
-              return
-            }
-            setCreateOpen(true)
-          }}
-          onDelete={(connection) => {
-            if (!canManageConnections) {
-              return
-            }
-            setDeletingConnection(connection)
-          }}
-          onEdit={(connection) => {
-            if (!canManageConnections) {
-              return
-            }
-            setEditingConnection(connection)
-          }}
-          onManageIndexing={(connection) => {
-            if (!canManageConnections) {
-              return
-            }
-            onManageIndexing(connection)
-          }}
-        />
+      <main className="mx-auto flex w-full min-w-0 flex-1 flex-col">
+        <section className="min-h-0 flex-1">
+          <ConnectionsGrid
+            canManageConnections={canManageConnections}
+            connections={connections}
+            errorMessage={errorMessage}
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            onCreate={() => {
+              if (!canManageConnections) {
+                return
+              }
+              setCreateOpen(true)
+            }}
+            onDelete={(connection) => {
+              if (!canManageConnections) {
+                return
+              }
+              setDeletingConnection(connection)
+            }}
+            onEdit={(connection) => {
+              if (!canManageConnections) {
+                return
+              }
+              setEditingConnection(connection)
+            }}
+            onManageIndexing={(connection) => {
+              if (!canManageConnections) {
+                return
+              }
+              onManageIndexing(connection)
+            }}
+          />
+        </section>
       </main>
 
       {canManageConnections && createOpen ? (

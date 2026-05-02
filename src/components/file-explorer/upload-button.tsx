@@ -69,13 +69,7 @@ export function UploadButton({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-border bg-card text-foreground hover:bg-accent h-8 rounded-sm px-2.5 font-normal"
-            disabled={disabled}
-          >
+          <Button type="button" variant="outline" size="sm" disabled={disabled}>
             <Upload className="size-4" />
             Upload
           </Button>

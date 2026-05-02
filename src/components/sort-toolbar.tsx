@@ -60,76 +60,78 @@ export function SortToolbar({
   return (
     <div
       className={cn(
-        'flex w-full flex-wrap items-center justify-end gap-1',
+        'flex w-full flex-wrap items-center justify-between gap-2',
         className,
       )}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="text-muted-foreground hover:bg-accent hover:text-foreground size-8"
-        aria-label={sortAscending ? 'Sort ascending' : 'Sort descending'}
-        onClick={onToggleSortDirection}
-      >
-        {sortAscending ? (
-          <ArrowUpAZ className="size-[1.125rem]" />
-        ) : (
-          <ArrowDownAZ className="size-[1.125rem]" />
-        )}
-      </Button>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label={sortAscending ? 'Sort ascending' : 'Sort descending'}
+          onClick={onToggleSortDirection}
+        >
+          {sortAscending ? (
+            <ArrowUpAZ className="size-[1.05rem]" />
+          ) : (
+            <ArrowDownAZ className="size-[1.05rem]" />
+          )}
+        </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-foreground hover:bg-accent h-8 gap-1 px-2 text-xs font-medium"
-          >
-            {fieldLabels[sortField]}
-            <ChevronDown className="size-4 opacity-70" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[11rem]">
-          {fields.map((field) => {
-            const Icon = fieldIcons[field]
-
-            return (
-              <DropdownMenuItem
-                key={field}
-                onClick={() => onSortFieldChange(field)}
-                className={sortField === field ? 'bg-accent' : ''}
-              >
-                <Icon className="size-4" />
-                {fieldLabels[field]}
-              </DropdownMenuItem>
-            )
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {menuItems ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:bg-accent size-8"
-              aria-label="More actions"
+              size="sm"
+              className="text-foreground hover:bg-accent h-8 gap-1 px-2 text-xs font-medium"
             >
-              <MoreVertical className="size-[1.125rem]" />
+              Sort by {fieldLabels[sortField]}
+              <ChevronDown className="size-4 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[10rem]">
-            {menuItems}
+          <DropdownMenuContent align="start" className="min-w-[11rem]">
+            {fields.map((field) => {
+              const Icon = fieldIcons[field]
+
+              return (
+                <DropdownMenuItem
+                  key={field}
+                  onClick={() => onSortFieldChange(field)}
+                  className={sortField === field ? 'bg-accent' : ''}
+                >
+                  <Icon className="size-4" />
+                  {fieldLabels[field]}
+                </DropdownMenuItem>
+              )
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : null}
+
+        {menuItems ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:bg-accent"
+                aria-label="More actions"
+              >
+                <MoreVertical className="size-[1.125rem]" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[10rem]">
+              {menuItems}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
 
       {trailing ? (
-        <div className="flex items-center gap-0.5 pl-1">{trailing}</div>
+        <div className="flex items-center gap-1">{trailing}</div>
       ) : null}
     </div>
   )

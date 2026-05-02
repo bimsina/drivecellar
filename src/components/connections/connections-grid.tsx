@@ -106,7 +106,7 @@ export function ConnectionsGrid({
   }
 
   return (
-    <div className="w-full space-y-4">
+    <section className="bg-background/55 w-full rounded-[calc(var(--radius)+8px)] p-2">
       {errorMessage ? (
         <Alert variant="destructive">
           <AlertTitle>Could not load storage</AlertTitle>
@@ -115,8 +115,8 @@ export function ConnectionsGrid({
       ) : null}
 
       {connections.length === 0 ? (
-        <div className="border-border/70 bg-card/60 flex min-h-[min(60vh,24rem)] flex-col items-center justify-center rounded-sm border border-dashed px-4 py-16 text-center">
-          <div className="text-muted-foreground border-border/70 bg-background/70 rounded-sm border p-4">
+        <div className="bg-card/66 flex min-h-[min(60vh,24rem)] flex-col items-center justify-center rounded-[calc(var(--radius)+6px)] px-4 py-16 text-center">
+          <div className="text-muted-foreground bg-muted/40 rounded-[calc(var(--radius)+3px)] p-4">
             <Folder className="mx-auto size-12" strokeWidth={1.25} />
           </div>
           <p className="text-foreground mt-6 text-sm font-medium">
@@ -125,7 +125,7 @@ export function ConnectionsGrid({
           {canManageConnections ? (
             <Button
               type="button"
-              className="mt-6 h-9 rounded-sm px-4 font-medium"
+              className="mt-6 h-9 px-4 font-medium"
               onClick={onCreate}
             >
               <Plus className="mr-2 size-4" />
@@ -134,10 +134,10 @@ export function ConnectionsGrid({
           ) : null}
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-5">
-          <div className="flex flex-col gap-3 px-1 py-1">
+        <div className="flex w-full flex-col gap-4">
+          <div className="bg-card/72 flex flex-col gap-3 rounded-[calc(var(--radius)+6px)] px-2 py-2">
             <SortToolbar
-              className="px-1 py-1"
+              className="rounded-[calc(var(--radius)+4px)] px-2 py-1.5"
               sortField={sortField}
               onSortFieldChange={setSortField}
               sortAscending={sortAscending}
@@ -148,28 +148,23 @@ export function ConnectionsGrid({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 rounded-sm px-3"
+                    className="h-9 px-3"
                     onClick={onCreate}
                   >
                     <Plus className="text-primary mr-2 size-4" />
                     Add storage
                   </Button>
+                ) : isRefreshing ? (
+                  <span className="text-muted-foreground px-1 text-xs">
+                    Updating…
+                  </span>
                 ) : undefined
               }
             />
           </div>
 
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
-                Storage
-              </h2>
-              {isRefreshing ? (
-                <span className="text-muted-foreground text-xs">Updating…</span>
-              ) : null}
-            </div>
-
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {sorted.map((connection) => (
                 <li key={connection.id} className="min-w-0">
                   <ConnectionTile
@@ -185,7 +180,7 @@ export function ConnectionsGrid({
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -205,13 +200,13 @@ function ConnectionTile({
         to="/c/$id"
         params={{ id: connection.id }}
         className={cn(
-          'border-border/70 bg-card/78 flex min-h-32 flex-col items-start gap-4 rounded-sm border px-4 py-4 text-left transition-[background-color,border-color,box-shadow] duration-150',
-          'text-foreground hover:border-border hover:bg-accent/45 focus-visible:ring-ring outline-none hover:shadow-sm focus-visible:ring-2',
+          'bg-card/72 flex min-h-36 flex-col items-start gap-4 rounded-[calc(var(--radius)+6px)] border border-transparent px-4 py-4 text-left transition-[background-color] duration-150',
+          'text-foreground hover:ring-primary/40 focus-visible:ring-ring outline-none hover:ring-1 focus-visible:ring-2',
         )}
       >
         <span
           className={cn(
-            'text-primary flex size-14 shrink-0 items-center justify-center rounded-sm',
+            'text-primary bg-muted/45 flex size-14 shrink-0 items-center justify-center rounded-[calc(var(--radius)+4px)]',
           )}
           style={getPaletteIconBadgeStyle(connection.color)}
         >
@@ -242,7 +237,7 @@ function ConnectionTile({
               type="button"
               variant="ghost"
               size="icon"
-              className="text-muted-foreground/60 hover:text-foreground hover:bg-accent absolute top-2 right-2 size-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              className="absolute top-2 right-2 size-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
               onClick={(event) => {
                 event.preventDefault()
               }}
@@ -270,7 +265,7 @@ function ConnectionTile({
               }}
             >
               <Layers className="size-4" />
-              Manage indexing
+              Indexing
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

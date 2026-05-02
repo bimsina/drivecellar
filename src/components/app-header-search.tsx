@@ -286,12 +286,12 @@ export function AppHeaderSearch({
         type="button"
         variant="outline"
         size="sm"
-        className="border-border/80 bg-card text-muted-foreground hover:bg-accent/70 h-9 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-sm px-3 shadow-none"
+        className="bg-background/72 text-muted-foreground hover:bg-accent/65 h-10 w-full max-w-full min-w-0 flex-1 justify-start gap-2 rounded-[calc(var(--radius)+5px)] px-3 shadow-none"
         onClick={() => setCommandOpen(true)}
       >
         <Search className="size-4 shrink-0 opacity-70" aria-hidden />
         <span className="truncate">Search indexed files</span>
-        <kbd className="bg-muted/70 text-muted-foreground border-border/70 pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-sm border px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
+        <kbd className="bg-muted/62 text-muted-foreground pointer-events-none ml-auto hidden shrink-0 items-center gap-0.5 rounded-[calc(var(--radius)+1px)] px-1.5 py-px font-mono text-[10px] font-medium sm:inline-flex">
           {shortcutHint}
         </kbd>
       </Button>

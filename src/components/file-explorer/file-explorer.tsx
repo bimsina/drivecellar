@@ -467,7 +467,7 @@ export function FileExplorer({
               void handleDrop(event)
             }}
           >
-            <div className="mb-0 flex flex-col gap-3 px-0 py-2 sm:px-0">
+            <div className="mb-0 flex min-h-0 flex-1 flex-col gap-3 px-0 py-1 sm:px-0">
               {showNoIndexAlert ? (
                 <Alert>
                   <AlertTitle>No index has been run yet</AlertTitle>
@@ -483,161 +483,167 @@ export function FileExplorer({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              <div className="border-border/70 bg-card/86 flex flex-col gap-3 rounded-sm border px-3 py-3 shadow-sm shadow-black/2 lg:px-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <h1 className="text-foreground truncate text-base font-semibold">
-                      {normalizedPath === '/'
-                        ? connectionName
-                        : itemNameFromPath(normalizedPath, connectionName)}
-                    </h1>
-                    <ExplorerBreadcrumb
-                      connectionId={connectionId}
-                      connectionName={connectionName}
-                      path={normalizedPath}
-                      onNavigate={onPathChange}
-                    />
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant={inspectorOpen ? 'secondary' : 'outline'}
-                      size="sm"
-                      className="h-8 rounded-sm px-2.5"
-                      onMouseDown={(event) => {
-                        event.preventDefault()
-                      }}
-                      onClick={() => setInspectorOpen((open) => !open)}
-                    >
-                      <Info className="size-4" />
-                      Details
-                    </Button>
-                    {canManagePermissions ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-sm px-2.5"
-                        onClick={() => {
-                          setManageAccessTarget({
-                            path: normalizedPath,
-                            itemName:
-                              normalizedPath === '/'
-                                ? `${connectionName} root`
-                                : itemNameFromPath(
-                                    normalizedPath,
-                                    connectionName,
-                                  ),
-                            isDirectory: true,
-                          })
-                        }}
-                      >
-                        <Shield className="size-4" />
-                        Manage access
-                      </Button>
-                    ) : null}
-                    {canWriteCurrentPath ? (
-                      <>
+              <div
+                className={cn(
+                  'grid min-h-0 flex-1 gap-3',
+                  inspectorOpen && 'xl:grid-cols-[minmax(0,1fr)_21rem]',
+                )}
+              >
+                <div className="bg-background/24 flex min-h-0 flex-col overflow-hidden rounded-[calc(var(--radius)+8px)] p-1.5">
+                  <div className="bg-card/76 mb-2 flex flex-col gap-3 rounded-[calc(var(--radius)+6px)] px-3 py-3">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <h1 className="text-foreground truncate text-base font-semibold">
+                          {normalizedPath === '/'
+                            ? connectionName
+                            : itemNameFromPath(normalizedPath, connectionName)}
+                        </h1>
+                        <ExplorerBreadcrumb
+                          connectionId={connectionId}
+                          connectionName={connectionName}
+                          path={normalizedPath}
+                          onNavigate={onPathChange}
+                        />
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant={inspectorOpen ? 'secondary' : 'outline'}
                           size="sm"
-                          className="h-8 rounded-sm px-2.5"
-                          onClick={() => setCreateFolderOpen(true)}
+                          className="h-8 px-2.5"
+                          onMouseDown={(event) => {
+                            event.preventDefault()
+                          }}
+                          onClick={() => setInspectorOpen((open) => !open)}
                         >
-                          <FolderPlus className="size-4" />
-                          New folder
+                          <Info className="size-4" />
+                          Preview
                         </Button>
-                        <UploadButton
-                          onSelectFiles={handleSelectedFiles}
-                          onSelectFolder={handleSelectedFiles}
+                        {canManagePermissions ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2.5"
+                            onClick={() => {
+                              setManageAccessTarget({
+                                path: normalizedPath,
+                                itemName:
+                                  normalizedPath === '/'
+                                    ? `${connectionName} root`
+                                    : itemNameFromPath(
+                                        normalizedPath,
+                                        connectionName,
+                                      ),
+                                isDirectory: true,
+                              })
+                            }}
+                          >
+                            <Shield className="size-4" />
+                            Access
+                          </Button>
+                        ) : null}
+                        {canWriteCurrentPath ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5"
+                              onClick={() => setCreateFolderOpen(true)}
+                            >
+                              <FolderPlus className="size-4" />
+                              New folder
+                            </Button>
+                            <UploadButton
+                              onSelectFiles={handleSelectedFiles}
+                              onSelectFolder={handleSelectedFiles}
+                            />
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-card/58 min-h-0 flex-1 overflow-hidden rounded-[calc(var(--radius)+6px)]">
+                    <div
+                      ref={listScrollContainerRef}
+                      className="relative h-full min-h-0 overflow-auto px-0 py-1 pr-1"
+                    >
+                      {firstPageQuery.isPending ? (
+                        <div className="space-y-4">
+                          <div className="flex justify-end gap-2 pb-2">
+                            <Skeleton className="h-9 w-9 rounded-sm" />
+                            <Skeleton className="h-9 w-28 rounded-sm" />
+                          </div>
+                          <Skeleton className="h-4 w-20 rounded" />
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <Skeleton key={i} className="h-11 rounded-sm" />
+                            ))}
+                          </div>
+                        </div>
+                      ) : firstPageQuery.isError ? (
+                        <div className="flex h-full min-h-56 items-center justify-center rounded-sm p-6 text-center">
+                          <p className="text-destructive text-sm">
+                            {firstPageQuery.error?.message ??
+                              'Could not load files.'}
+                          </p>
+                        </div>
+                      ) : (
+                        <FileList
+                          connectionId={connectionId}
+                          currentPath={normalizedPath}
+                          canWriteCurrentPath={canWriteCurrentPath}
+                          canManagePermissions={canManagePermissions}
+                          entries={entries}
+                          hasMoreEntries={hasMoreEntries}
+                          isLoadingMoreEntries={isLoadingMoreEntries}
+                          onLoadMoreEntries={loadMoreEntries}
+                          scrollContainerRef={listScrollContainerRef}
+                          viewMode={viewMode}
+                          onViewModeChange={setViewMode}
+                          onNavigate={onPathChange}
+                          onOpenFile={onOpenFile}
+                          onManageAccess={setManageAccessTarget}
+                          tagsByPath={tagsByPath}
+                          selectedPath={selectedPath}
+                          onSelectedPathChange={setSelectedPath}
+                          inspectorOpen={inspectorOpen}
+                          onInspectorOpenChange={setInspectorOpen}
                         />
-                      </>
-                    ) : null}
+                      )}
+
+                      {canWriteCurrentPath && isDragActive ? (
+                        <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 rounded-[calc(var(--radius)+6px)] border-2 border-dashed p-5 backdrop-blur-sm">
+                          <div className="flex h-full flex-col items-center justify-center text-center">
+                            <div className="bg-primary/10 text-primary rounded-[calc(var(--radius)+3px)] p-4">
+                              <Upload className="size-6" />
+                            </div>
+                            <p className="text-foreground mt-4 text-base font-medium">
+                              Drop files or folders to upload
+                            </p>
+                            <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
+                              Folder structure stays intact, and conflicts are
+                              safely renamed instead of overwritten.
+                            </p>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div
-              className={cn(
-                'grid min-h-0 flex-1 gap-3',
-                inspectorOpen && 'lg:grid-cols-[minmax(0,1fr)_22rem]',
-              )}
-            >
-              <div
-                ref={listScrollContainerRef}
-                className="relative min-h-0 overflow-auto px-0 py-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
-              >
-                {firstPageQuery.isPending ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-end gap-2 pb-2">
-                      <Skeleton className="h-9 w-9 rounded-sm" />
-                      <Skeleton className="h-9 w-28 rounded-sm" />
-                    </div>
-                    <Skeleton className="h-4 w-20 rounded" />
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-11 rounded-sm" />
-                      ))}
-                    </div>
-                  </div>
-                ) : firstPageQuery.isError ? (
-                  <div className="flex h-full min-h-56 items-center justify-center rounded-sm p-6 text-center">
-                    <p className="text-destructive text-sm">
-                      {firstPageQuery.error?.message ?? 'Could not load files.'}
-                    </p>
-                  </div>
-                ) : (
-                  <FileList
-                    connectionId={connectionId}
-                    currentPath={normalizedPath}
-                    canWriteCurrentPath={canWriteCurrentPath}
-                    canManagePermissions={canManagePermissions}
-                    entries={entries}
-                    hasMoreEntries={hasMoreEntries}
-                    isLoadingMoreEntries={isLoadingMoreEntries}
-                    onLoadMoreEntries={loadMoreEntries}
-                    scrollContainerRef={listScrollContainerRef}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                    onNavigate={onPathChange}
-                    onOpenFile={onOpenFile}
-                    onManageAccess={setManageAccessTarget}
-                    tagsByPath={tagsByPath}
-                    selectedPath={selectedPath}
-                    onSelectedPathChange={setSelectedPath}
-                    inspectorOpen={inspectorOpen}
-                    onInspectorOpenChange={setInspectorOpen}
-                  />
-                )}
 
-                {canWriteCurrentPath && isDragActive ? (
-                  <div className="border-primary bg-background/90 dark:bg-background/85 absolute inset-0 rounded-sm border-2 border-dashed p-5 backdrop-blur-sm">
-                    <div className="flex h-full flex-col items-center justify-center text-center">
-                      <div className="bg-primary/10 text-primary rounded-sm p-4">
-                        <Upload className="size-6" />
-                      </div>
-                      <p className="text-foreground mt-4 text-base font-medium">
-                        Drop files or folders to upload
-                      </p>
-                      <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
-                        Folder structure stays intact, and conflicts are safely
-                        renamed instead of overwritten.
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
+                <FileInspector
+                  open={inspectorOpen}
+                  onOpenChange={setInspectorOpen}
+                  connectionId={connectionId}
+                  connectionName={connectionName}
+                  currentPath={normalizedPath}
+                  currentAccess={myAccessQuery.data?.access}
+                  selectedEntry={selectedEntry}
+                />
               </div>
-
-              <FileInspector
-                open={inspectorOpen}
-                onOpenChange={setInspectorOpen}
-                connectionId={connectionId}
-                connectionName={connectionName}
-                currentPath={normalizedPath}
-                currentAccess={myAccessQuery.data?.access}
-                selectedEntry={selectedEntry}
-              />
             </div>
           </div>
 

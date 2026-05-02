@@ -253,20 +253,20 @@ function FolderCard({
       onDoubleClick={onActivate}
       onContextMenuCapture={onSelect}
       className={cn(
-        'group flex cursor-default items-stretch gap-2 rounded-sm border px-2 py-1.5 transition-[background-color,border-color,box-shadow] duration-150',
+        'group flex cursor-default items-stretch gap-2 rounded-[calc(var(--radius)+5px)] border px-2 py-1.5 transition-[background-color,border-color] duration-150',
         isSelected
-          ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
-          : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
+          ? 'ring-primary/40 bg-card ring-1'
+          : 'border-border/35 bg-card hover:ring-primary/40 focus-visible:ring-ring outline-none hover:ring-1 focus-visible:ring-2',
       )}
     >
       <div
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-sm px-3 py-2"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-[calc(var(--radius)+4px)] px-3 py-2"
         role="button"
         tabIndex={-1}
         aria-pressed={isSelected}
       >
         <span
-          className="bg-muted/65 text-primary flex size-11 shrink-0 items-center justify-center rounded-sm"
+          className="bg-muted/78 text-primary flex size-11 shrink-0 items-center justify-center rounded-[calc(var(--radius)+3px)]"
           style={getPaletteIconBadgeStyle(entry.color)}
         >
           <DynamicIcon
@@ -309,13 +309,13 @@ function FileCard({
       onDoubleClick={onActivate}
       onContextMenuCapture={onSelect}
       className={cn(
-        'group flex cursor-default flex-col overflow-hidden rounded-sm border transition-[background-color,border-color,box-shadow] duration-150',
+        'group flex cursor-default flex-col overflow-hidden rounded-[calc(var(--radius)+5px)] border transition-all',
         isSelected
-          ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
-          : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
+          ? 'ring-primary/40 bg-card ring-1'
+          : 'border-border/35 bg-card hover:ring-primary/40 focus-visible:ring-ring outline-none hover:ring-1 focus-visible:ring-2',
       )}
     >
-      <div className="border-border/50 flex items-start gap-2 border-b px-3 py-2.5">
+      <div className="flex items-start gap-2 px-3 py-2.5">
         <div className="min-w-0 flex-1">
           <p className="text-foreground truncate text-sm font-semibold">
             {entry.name}
@@ -329,7 +329,7 @@ function FileCard({
       </div>
 
       <div
-        className="bg-muted/35 flex min-h-24 flex-1 items-center justify-center px-4 py-3"
+        className="bg-muted/38 flex min-h-24 flex-1 items-center justify-center px-4 py-3"
         role="button"
         tabIndex={-1}
         aria-pressed={isSelected}
@@ -338,7 +338,7 @@ function FileCard({
           <img
             src={src}
             alt=""
-            className="max-h-24 w-full max-w-full rounded-sm object-contain"
+            className="max-h-24 w-full max-w-full rounded-[calc(var(--radius)+2px)] object-contain"
             loading="lazy"
           />
         ) : (
@@ -781,16 +781,16 @@ export function FileList({
           onDoubleClick={() => openEntry(entry)}
           onContextMenuCapture={() => selectEntry(entry.path)}
           className={cn(
-            'group grid h-full min-h-0 cursor-default grid-cols-[minmax(0,1fr)_7rem_8rem_5rem] items-center gap-3 rounded-sm border px-3 py-2 transition-[background-color,border-color,box-shadow] max-md:grid-cols-[minmax(0,1fr)_5rem]',
+            'group grid h-full min-h-0 cursor-default grid-cols-[minmax(0,1fr)_7rem_8rem_5rem] items-center gap-3 rounded-[calc(var(--radius)+4px)] border px-3 py-2 transition-[background-color,border-color] max-md:grid-cols-[minmax(0,1fr)_5rem]',
             isSelected
-              ? 'border-primary/35 bg-primary/[0.07] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
-              : 'border-border/70 bg-card hover:border-border hover:bg-accent/45',
+              ? 'border-primary/40 bg-primary/[0.08] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_18%,transparent)]'
+              : 'bg-card/50 hover:bg-accent/35 border-transparent',
           )}
         >
           <span className="inline-flex min-w-0 items-center gap-3">
             <span
               className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-sm',
+                'flex size-9 shrink-0 items-center justify-center rounded-[calc(var(--radius)+2px)]',
                 entry.isDirectory ? 'text-primary' : 'text-muted-foreground',
               )}
               style={
@@ -1079,7 +1079,7 @@ export function FileList({
   return (
     <div className="space-y-3">
       <SortToolbar
-        className="border-border/70 bg-card/72 rounded-sm border px-2 py-1.5"
+        className="bg-card/72 rounded-[calc(var(--radius)+5px)] px-2 py-1.5"
         sortField={sortField}
         onSortFieldChange={setSortField}
         sortAscending={sortAscending}
@@ -1094,19 +1094,19 @@ export function FileList({
             variant="outline"
             size="sm"
             aria-label="View mode"
-            className="rounded-sm border-0 bg-transparent p-0.5"
+            className="rounded-[calc(var(--radius)+4px)] border-0 bg-transparent p-0.5"
           >
             <ToggleGroupItem
               value="grid"
               aria-label="Grid view"
-              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-sm px-0 shadow-none"
+              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-[calc(var(--radius)+3px)] px-0 shadow-none"
             >
               <LayoutGrid className="size-4" />
             </ToggleGroupItem>
             <ToggleGroupItem
               value="list"
               aria-label="List view"
-              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-sm px-0 shadow-none"
+              className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground size-8 rounded-[calc(var(--radius)+3px)] px-0 shadow-none"
             >
               <List className="size-4" />
             </ToggleGroupItem>
@@ -1115,8 +1115,8 @@ export function FileList({
       />
 
       {entries.length === 0 ? (
-        <div className="border-border/70 bg-card/60 flex min-h-[min(50vh,18rem)] flex-col items-center justify-center rounded-sm border border-dashed px-4 py-12 text-center">
-          <div className="bg-background/65 border-border/70 mb-4 flex items-center justify-center rounded-sm border p-4">
+        <div className="bg-card/55 flex min-h-[min(50vh,18rem)] flex-col items-center justify-center rounded-[calc(var(--radius)+6px)] px-4 py-12 text-center">
+          <div className="bg-background/65 mb-4 flex items-center justify-center rounded-[calc(var(--radius)+3px)] p-4">
             <FolderIcon
               className="text-muted-foreground/70 size-10"
               strokeWidth={1.25}
@@ -1139,13 +1139,13 @@ export function FileList({
           aria-label="Files and folders"
           onKeyDown={handleKeyDown}
           className={cn(
-            'min-h-80 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_20%,transparent)]',
+            'min-h-80 rounded-[calc(var(--radius)+4px)] outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_20%,transparent)]',
             viewMode === 'list' && 'pt-2',
           )}
         >
           <div className="mb-3 flex items-center justify-between gap-3 px-1">
             <div className="text-muted-foreground flex items-center gap-2 text-xs">
-              <span className="bg-muted rounded-sm px-2 py-1 font-medium">
+              <span className="bg-muted rounded-[calc(var(--radius)+2px)] px-2 py-1 font-medium">
                 {entries.length} {entries.length === 1 ? 'item' : 'items'}
               </span>
             </div>

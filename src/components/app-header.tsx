@@ -31,8 +31,8 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
   return (
     <header
       className={cn(
-        'border-border/60 bg-background/82 sticky top-0 z-50 border-b px-3 supports-[backdrop-filter]:backdrop-blur-xl md:px-5 lg:px-6',
-        wide ? 'py-2' : 'py-3',
+        'bg-card/70 z-40 px-3 supports-[backdrop-filter]:backdrop-blur-xl md:px-4',
+        wide ? 'py-2.5' : 'py-3',
         className,
       )}
     >
@@ -45,16 +45,16 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
         <Link
           to="/"
           className={cn(
-            'text-foreground shrink-0 rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_26%,transparent)]',
+            'text-foreground shrink-0 rounded-[calc(var(--radius)+4px)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--ring)_26%,transparent)]',
             !wide && 'font-semibold',
           )}
         >
-          <span className="flex items-center gap-2 rounded-sm px-1 py-1">
-            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-sm">
+          <span className="flex items-center gap-3 rounded-[calc(var(--radius)+4px)] px-1.5 py-1">
+            <span className="bg-primary/10 text-primary border-border/40 flex size-8 items-center justify-center rounded-[calc(var(--radius)+2px)] border">
               <HardDrive className="size-4.5" strokeWidth={2} />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm leading-none font-semibold">
+              <span className="block text-sm leading-none font-semibold tracking-[-0.01em]">
                 DriveCellar
               </span>
             </span>
@@ -69,14 +69,14 @@ export function AppHeader({ className, variant = 'default' }: AppHeaderProps) {
               activePath={activePath}
             />
           ) : (
-            <div className="text-muted-foreground border-border/80 bg-card hidden flex-1 items-center justify-center gap-2 rounded-sm border px-4 py-2 text-sm lg:flex">
+            <div className="text-muted-foreground bg-muted/45 hidden h-10 flex-1 items-center justify-center gap-2 rounded-[calc(var(--radius)+4px)] px-4 text-sm lg:flex">
               <Search className="size-4" />
               Browse, search, share
             </div>
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
           {session?.user ? <HeaderOrganizationSwitcher /> : null}
 
           <ThemeToggle />
@@ -119,8 +119,9 @@ function HeaderOrganizationSwitcher() {
           size="sm"
           title={organizationLabel}
           type="button"
+          className="bg-muted/40 hover:bg-muted/70 h-9 rounded-[calc(var(--radius)+4px)] px-2.5"
         >
-          <span className="bg-muted text-foreground border-border/70 flex size-7 shrink-0 items-center justify-center rounded-sm border">
+          <span className="bg-background/80 text-foreground border-border/40 flex size-7 shrink-0 items-center justify-center rounded-[calc(var(--radius)+2px)] border">
             <Building2 className="size-4" aria-hidden />
           </span>
           <span className="hidden min-w-0 flex-1 truncate text-left text-sm sm:block">

@@ -177,11 +177,11 @@ function InspectorSurface({
   return (
     <section
       className={cn(
-        'border-border/70 bg-card/88 supports-[backdrop-filter]:bg-card/74 flex h-full min-h-[28rem] flex-col overflow-hidden rounded-sm border supports-[backdrop-filter]:backdrop-blur-xl',
+        'bg-card/82 supports-[backdrop-filter]:bg-card/78 flex h-full min-h-[28rem] flex-col overflow-hidden rounded-[calc(var(--radius)+8px)] supports-[backdrop-filter]:backdrop-blur-xl',
         className,
       )}
     >
-      <div className="border-border/70 flex items-start justify-between gap-3 border-b px-5 py-4">
+      <div className="flex items-start justify-between gap-3 px-5 py-4">
         <div className="min-w-0">
           <h2 className="text-foreground text-sm font-semibold">
             {isCurrentLocation ? 'Current folder' : 'Selected item'}
@@ -191,7 +191,7 @@ function InspectorSurface({
           type="button"
           variant="ghost"
           size="icon"
-          className="size-9 rounded-sm"
+          className="size-9 rounded-[calc(var(--radius)+3px)]"
           onMouseDown={(event) => {
             event.preventDefault()
           }}
@@ -204,7 +204,7 @@ function InspectorSurface({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto px-5 py-5">
-        <div className="bg-muted/35 border-border/70 mb-5 rounded-sm border p-4">
+        <div className="bg-muted/28 mb-5 rounded-[calc(var(--radius)+5px)] p-4">
           <div className="flex items-start gap-3">
             <div
               className="text-primary flex size-14 shrink-0 items-center justify-center"
@@ -214,7 +214,7 @@ function InspectorSurface({
                 <img
                   src={buildInlinePreviewUrl(connectionId, inspectedPath)}
                   alt=""
-                  className="size-full rounded-sm object-cover"
+                  className="size-full rounded-[calc(var(--radius)+3px)] object-cover"
                 />
               ) : entry.isDirectory ? (
                 <DynamicIcon
@@ -350,7 +350,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="bg-muted/55 text-muted-foreground border-border/70 flex size-9 shrink-0 items-center justify-center rounded-sm border">
+      <div className="bg-muted/55 text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-sm">
         {icon}
       </div>
       <div className="min-w-0 flex-1">

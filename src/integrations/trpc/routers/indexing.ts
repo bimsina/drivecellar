@@ -34,7 +34,7 @@ const indexRunSchema = z.object({
   id: z.string(),
   connectionId: z.string(),
   status: z.enum(['running', 'succeeded', 'failed', 'canceled']),
-  trigger: z.enum(['manual', 'auto']),
+  trigger: z.enum(['manual', 'auto', 'scheduled']),
   triggeredByUserId: z.string().nullable(),
   startedAt: z.date(),
   finishedAt: z.date().nullable(),

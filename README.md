@@ -48,11 +48,51 @@ docker run -d \
   ghcr.io/bimsina/drivecellar:latest
 ```
 
+## One-click deploy
+
+This repo includes a **Dockerfile**. Use any provider below that runs containers and lets you attach a **persistent disk** for SQLite (see [Published Image](#published-image) and [`.env.example`](./.env.example) for required environment variables).
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center" width="50%">
+        <a href="https://railway.com/new/template?template=https://github.com/bimsina/drivecellar" title="Deploy on Railway">
+          <img src="https://railway.com/button.svg" alt="Deploy on Railway" width="180" />
+        </a>
+      </td>
+      <td align="center" width="50%">
+        <a href="https://render.com/deploy?repo=https://github.com/bimsina/drivecellar" title="Deploy to Render">
+          <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" width="185" />
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <a href="https://app.koyeb.com/deploy?type=git&amp;repository=github.com/bimsina/drivecellar&amp;branch=main&amp;name=drivecellar" title="Deploy to Koyeb">
+          <img src="https://www.koyeb.com/static/images/deploy/button.svg" alt="Deploy to Koyeb" width="185" />
+        </a>
+      </td>
+      <td align="center">
+        <a href="https://deploy.cloud.run/?git_repo=https://github.com/bimsina/drivecellar" title="Run on Google Cloud">
+          <img src="https://deploy.cloud.run/button.svg" alt="Run on Google Cloud" width="185" />
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+**After deploy**, set **`DATABASE_URL`**, **`BETTER_AUTH_URL`** (your public `https://` origin), **`BETTER_AUTH_SECRET`**, and **`CONNECTION_ENCRYPTION_KEY`** in the provider’s dashboard. Most hosts inject **`PORT`**; the container runs **`pnpm db:migrate`** on startup, then starts the app.
+
+**Disk:** Mount persistent storage at the path used in `DATABASE_URL` (for example `/app/.data`). **Google Cloud Run** uses an ephemeral filesystem unless you add a [Cloud Run volume](https://cloud.google.com/run/docs/configuring/services/volumes) or other durable storage—use Railway, Render, or Koyeb first if you want the simplest SQLite-on-disk setup.
+
+On **Render**, a repo [`render.yaml`](https://render.com/docs/infrastructure-as-code) blueprint can later provision the web service, env, and disk in one step; the button above still opens a GitHub-based deploy so you can connect the Dockerfile, env, and disk manually.
+
 ## What You Get
 
 - Browse files from a normal web UI
 - Connect local folders or S3-compatible storage
 - Search indexed files and folders
+- **Automatic re-indexing** on a schedule you choose (or manual / first-connection runs) so the index stays fresh
 - Organize content with tags, colors, and icons
 - Share files or folders with public links
 - Control access for different people inside a team workspace
@@ -70,8 +110,8 @@ After the container starts:
 
 1. Create your first account.
 2. Create a team workspace.
-3. Add a storage connection.
-4. Start indexing and begin browsing.
+3. Add a storage connection (indexed automatically on create; optional **re-index schedule** in the add/edit drive form).
+4. Browse files, or open **Indexing** for a connection to re-run or review run history once the first index has finished.
 
 ## Slightly More Structured Setup
 
@@ -139,11 +179,18 @@ DRIVECELLAR_IMAGE_TAG=v0.1.0 docker compose up -d
 - Optional colors and icons for indexed items
 - Public share links with expiration and password support
 
+### Indexing
+
+- **Automatic index** when an admin creates a new storage connection
+- **Manual re-index** from the per-connection Indexing workspace (owners and admins)
+- **Scheduled re-indexing** per connection: choose an interval (for example every 5, 15, or 30 minutes, hourly, every 6 hours, daily, or weekly) or leave it disabled; the server runs full re-index passes on that cadence while the app is up
+- **Run history** with status, trigger type (`auto`, `manual`, or `scheduled`), counts, and errors for each completed or in-progress run
+
 ## How It Works
 
 DriveCellar keeps app data in SQLite, but your files stay in the storage you connect.
 
-It indexes metadata like file names, paths, sizes, and types so the UI can search and browse quickly. When someone opens, downloads, uploads, or shares a file, DriveCellar checks permissions in the app layer and then performs the action against the connected storage backend.
+It indexes metadata like file names, paths, sizes, and types so the UI can search and browse quickly. New connections are indexed once automatically; you can also start a full re-index manually or set an optional **re-index schedule** on each connection so metadata stays aligned with the underlying storage over time. When someone opens, downloads, uploads, or shares a file, DriveCellar checks permissions in the app layer and then performs the action against the connected storage backend.
 
 ## Published Image
 

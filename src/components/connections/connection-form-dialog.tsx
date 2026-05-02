@@ -1,8 +1,15 @@
 import { useForm } from '@tanstack/react-form'
 import type { ReactFormExtendedApi } from '@tanstack/react-form'
 import type { AnyFieldApi } from '@tanstack/form-core'
-import { Eye, FolderLock, HardDrive, PencilLine, ServerCog } from 'lucide-react'
-import { useState } from 'react'
+import {
+  CalendarClock,
+  Eye,
+  FolderLock,
+  HardDrive,
+  PencilLine,
+  ServerCog,
+} from 'lucide-react'
+import { useState, useId } from 'react'
 import type { ReactNode } from 'react'
 import { z } from 'zod/v4'
 
@@ -22,6 +29,13 @@ import { FieldError } from '#/components/ui/field-error'
 import { Input } from '#/components/ui/input'
 import { IconPicker } from '#/components/ui/icon-picker'
 import { Label } from '#/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
 import { Switch } from '#/components/ui/switch'
@@ -31,15 +45,16 @@ import {
   connectionTypeSchema,
   createConnectionInputSchema,
   updateConnectionInputSchema,
+  REINDEX_SCHEDULE_LABELS,
+  reindexScheduleSchema,
+  type ConnectionConfig,
+  type CreateConnectionInput,
+  type ConnectionListItem,
+  type ReindexSchedule,
+  type TestConnectionConfigResult,
+  type UpdateConnectionInput,
 } from '#/lib/connections.ts'
 import { colorKeySchema, iconValueSchema } from '#/lib/tags.ts'
-import type {
-  ConnectionConfig,
-  CreateConnectionInput,
-  ConnectionListItem,
-  TestConnectionConfigResult,
-  UpdateConnectionInput,
-} from '#/lib/connections.ts'
 
 type ConnectionFormDialogProps = {
   mode: 'create' | 'edit'
@@ -80,6 +95,7 @@ type ConnectionFormValues = {
   defaultAccess: 'editor' | 'viewer' | 'none'
   color: string | null
   icon: string | null
+  reindexSchedule: ReindexSchedule | null
   config: LocalFormConfig | S3FormConfig
 }
 
@@ -112,6 +128,7 @@ const connectionFormMetadataSchema = z.object({
   defaultAccess: permissionAccessSchema,
   color: colorKeySchema.nullable(),
   icon: iconValueSchema.nullable(),
+  reindexSchedule: reindexScheduleSchema.nullable(),
 })
 
 const createLocalFormConfigSchema = z.object({
@@ -225,6 +242,7 @@ function getDefaultFormValues(): ConnectionFormValues {
     defaultAccess: 'editor',
     color: null,
     icon: null,
+    reindexSchedule: null,
     config: getDefaultLocalConfig(),
   }
 }
@@ -243,6 +261,7 @@ function getFormValuesFromConnection(
     defaultAccess: connection.defaultAccess,
     color: connection.color,
     icon: connection.icon,
+    reindexSchedule: connection.reindexSchedule,
     config: getConfigValuesForType(connection.config.type, connection),
   }
 }
@@ -260,6 +279,7 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
       defaultAccess: values.defaultAccess,
       color: values.color,
       icon: values.icon,
+      reindexSchedule: values.reindexSchedule ?? null,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -279,6 +299,7 @@ function toCreateInput(values: ConnectionFormValues): CreateConnectionInput {
     defaultAccess: values.defaultAccess,
     color: values.color,
     icon: values.icon,
+    reindexSchedule: values.reindexSchedule ?? null,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -295,6 +316,7 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
       defaultAccess: values.defaultAccess,
       color: values.color,
       icon: values.icon,
+      reindexSchedule: values.reindexSchedule ?? null,
       config: {
         type: 's3',
         endpoint: values.config.endpoint,
@@ -317,6 +339,7 @@ function toUpdateInput(values: ConnectionFormValues): UpdateConnectionInput {
     defaultAccess: values.defaultAccess,
     color: values.color,
     icon: values.icon,
+    reindexSchedule: values.reindexSchedule ?? null,
     config: {
       type: 'local',
       basePath: values.config.basePath,
@@ -358,6 +381,10 @@ function validateConnectionType({ value }: { value: string }) {
 
 function validateDefaultAccess({ value }: { value: string }) {
   return getSchemaError(permissionAccessSchema, value)
+}
+
+function validateReindexSchedule({ value }: { value: ReindexSchedule | null }) {
+  return getSchemaError(reindexScheduleSchema.nullable(), value)
 }
 
 function validateBasePath({ value }: { value: string }) {
@@ -662,6 +689,109 @@ function DefaultAccessField({ form }: { form: ConnectionFormApi }) {
           }
         />
       )}
+    </form.Field>
+  )
+}
+
+const reindexScheduleSelectOrder: ReindexSchedule[] = [
+  'every_5_minutes',
+  'every_15_minutes',
+  'every_30_minutes',
+  'every_hour',
+  'every_6_hours',
+  'every_day',
+  'every_week',
+]
+
+const REINDEX_SCHEDULE_DISABLED = '__reindex_disabled__' as const
+
+function ReindexScheduleField({ form }: { form: ConnectionFormApi }) {
+  const triggerId = useId()
+
+  return (
+    <form.Field
+      name="reindexSchedule"
+      validators={{
+        onChange: validateReindexSchedule,
+        onSubmit: validateReindexSchedule,
+      }}
+    >
+      {(field) => {
+        const selectValue =
+          field.state.value === null
+            ? REINDEX_SCHEDULE_DISABLED
+            : field.state.value
+
+        return (
+          <div className="md:col-span-2">
+            <div
+              className={cn(
+                'border-border/60 from-muted/25 to-card/40 rounded-xl border bg-linear-to-br p-4 shadow-sm',
+                field.state.meta.errors.length > 0 &&
+                  'border-destructive/50 ring-destructive/15 ring-2',
+              )}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <div
+                    className="bg-primary/8 text-primary border-primary/15 flex size-10 shrink-0 items-center justify-center rounded-lg border"
+                    aria-hidden
+                  >
+                    <CalendarClock className="size-5" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <Label htmlFor={triggerId} className="text-sm font-medium">
+                      Auto re-index
+                    </Label>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Optional background job keeps search and browsing fresh
+                      without opening this dialog again.
+                    </p>
+                  </div>
+                </div>
+
+                <Select
+                  value={selectValue}
+                  onValueChange={(value) => {
+                    field.handleChange(
+                      value === REINDEX_SCHEDULE_DISABLED
+                        ? null
+                        : reindexScheduleSchema.parse(value),
+                    )
+                    field.handleBlur()
+                  }}
+                >
+                  <SelectTrigger
+                    id={triggerId}
+                    className="h-10 w-full min-w-0 sm:w-[min(100%,17.5rem)]"
+                    aria-invalid={field.state.meta.errors.length > 0}
+                  >
+                    <SelectValue placeholder="Choose a schedule" />
+                  </SelectTrigger>
+                  <SelectContent
+                    align="end"
+                    className="min-w-(--radix-select-trigger-width)"
+                  >
+                    <SelectItem value={REINDEX_SCHEDULE_DISABLED}>
+                      Disabled
+                    </SelectItem>
+                    {reindexScheduleSelectOrder.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {REINDEX_SCHEDULE_LABELS[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <FieldError
+                className="mt-3"
+                errors={getFieldErrors(field.state.meta.errors)}
+              />
+            </div>
+          </div>
+        )
+      }}
     </form.Field>
   )
 }
@@ -1018,6 +1148,7 @@ export function ConnectionFormDialog({
               <div className="md:col-span-2">
                 <DefaultAccessField form={form} />
               </div>
+              <ReindexScheduleField form={form} />
             </section>
           ) : (
             <form.Subscribe selector={(state) => state.values.config}>

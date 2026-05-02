@@ -7,6 +7,38 @@ const optionalTrimmedString = z.string().trim().optional()
 export const connectionTypeSchema = z.enum(['s3', 'local'])
 export const permissionAccessSchema = z.enum(['editor', 'viewer', 'none'])
 
+export const reindexScheduleSchema = z.enum([
+  'every_5_minutes',
+  'every_15_minutes',
+  'every_30_minutes',
+  'every_hour',
+  'every_6_hours',
+  'every_day',
+  'every_week',
+])
+
+export type ReindexSchedule = z.infer<typeof reindexScheduleSchema>
+
+export const REINDEX_SCHEDULE_INTERVALS: Record<ReindexSchedule, number> = {
+  every_5_minutes: 5 * 60 * 1000,
+  every_15_minutes: 15 * 60 * 1000,
+  every_30_minutes: 30 * 60 * 1000,
+  every_hour: 60 * 60 * 1000,
+  every_6_hours: 6 * 60 * 60 * 1000,
+  every_day: 24 * 60 * 60 * 1000,
+  every_week: 7 * 24 * 60 * 60 * 1000,
+}
+
+export const REINDEX_SCHEDULE_LABELS: Record<ReindexSchedule, string> = {
+  every_5_minutes: 'Every 5 minutes',
+  every_15_minutes: 'Every 15 minutes',
+  every_30_minutes: 'Every 30 minutes',
+  every_hour: 'Every hour',
+  every_6_hours: 'Every 6 hours',
+  every_day: 'Every day',
+  every_week: 'Every week',
+}
+
 export const connectionMetadataSchema = z.object({
   name: trimmedString.min(1, 'Connection name is required.').max(120),
   description: optionalTrimmedString
@@ -40,6 +72,7 @@ export const createConnectionInputSchema = connectionMetadataSchema.extend({
   defaultAccess: permissionAccessSchema,
   color: colorKeySchema.nullable().optional(),
   icon: iconValueSchema.nullable().optional(),
+  reindexSchedule: reindexScheduleSchema.nullable().optional(),
 })
 
 export const updateS3ConfigSchema = s3ConfigSchema.extend({
@@ -57,6 +90,7 @@ export const updateConnectionInputSchema = connectionMetadataSchema.extend({
   defaultAccess: permissionAccessSchema,
   color: colorKeySchema.nullable().optional(),
   icon: iconValueSchema.nullable().optional(),
+  reindexSchedule: reindexScheduleSchema.nullable().optional(),
 })
 
 export const deleteConnectionInputSchema = z.object({
@@ -90,6 +124,7 @@ export const connectionListItemSchema = z.object({
   config: clientConnectionConfigSchema,
   color: z.string().nullable(),
   icon: z.string().nullable(),
+  reindexSchedule: reindexScheduleSchema.nullable(),
 })
 
 export const getConnectionInputSchema = z.object({

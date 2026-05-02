@@ -73,6 +73,7 @@ function sanitizeConnectionConfig(
 function toClientConnection(connection: ConnectionRow) {
   return connectionListItemSchema.parse({
     ...connection,
+    reindexSchedule: connection.reindexSchedule ?? null,
     config: sanitizeConnectionConfig(parseConnectionConfig(connection.config)),
   })
 }
@@ -228,6 +229,7 @@ export const connectionsRouter = createTRPCRouter({
         config: serializeConnectionConfig(input.config),
         color: input.color ?? null,
         icon: input.icon ?? null,
+        reindexSchedule: input.reindexSchedule ?? null,
         createdBy: ctx.sessionData.user.id,
       })
 
@@ -280,6 +282,7 @@ export const connectionsRouter = createTRPCRouter({
           config: serializedConfig,
           color: input.color ?? null,
           icon: input.icon ?? null,
+          reindexSchedule: input.reindexSchedule ?? null,
         },
       )
 

@@ -6,7 +6,7 @@ export type IndexRunStatusValue =
   | 'succeeded'
   | 'failed'
   | 'canceled'
-export type IndexRunTrigger = 'manual' | 'auto'
+export type IndexRunTrigger = 'manual' | 'auto' | 'scheduled'
 
 export type IndexJobState = {
   jobId: string

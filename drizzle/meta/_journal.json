@@ -8,6 +8,13 @@
       "when": 1777187585942,
       "tag": "0000_cloudy_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777692779285,
+      "tag": "0001_lethal_odin",
+      "breakpoints": true
     }
   ]
 }

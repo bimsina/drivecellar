@@ -1,0 +1,1 @@
+ALTER TABLE `connections` ADD `reindex_schedule` text;

@@ -16,6 +16,7 @@ export const connections = sqliteTable(
     config: text('config').notNull(), // JSON — validated by Zod at app layer
     color: text('color'),
     icon: text('icon'),
+    reindexSchedule: text('reindex_schedule'),
     createdBy: text('created_by')
       .notNull()
       .references(() => users.id),

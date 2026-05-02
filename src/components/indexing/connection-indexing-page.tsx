@@ -24,6 +24,10 @@ import {
 } from '#/components/ui/table'
 import { useTRPC } from '#/integrations/trpc/react'
 import { authClient } from '#/lib/auth-client'
+import {
+  REINDEX_SCHEDULE_LABELS,
+  reindexScheduleSchema,
+} from '#/lib/connections.ts'
 
 type ConnectionIndexingPageProps = {
   connectionId: string
@@ -349,6 +353,13 @@ export function ConnectionIndexingPage({
 
   const connection = connectionQuery.data
 
+  const scheduleParsed = reindexScheduleSchema.safeParse(
+    connection.reindexSchedule,
+  )
+  const reindexScheduleLabel = scheduleParsed.success
+    ? REINDEX_SCHEDULE_LABELS[scheduleParsed.data]
+    : 'Disabled'
+
   return (
     <main className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-1 flex-col gap-4">
       <div className="bg-card/80 supports-[backdrop-filter]:bg-card/70 flex flex-wrap items-center justify-between gap-3 rounded-sm px-5 py-5 supports-[backdrop-filter]:backdrop-blur-xl">
@@ -461,6 +472,10 @@ export function ConnectionIndexingPage({
                 Last successful sync
               </p>
               <p>{formatDateTime(status?.lastIndexedAt ?? null)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Auto re-index</p>
+              <p>{reindexScheduleLabel}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Indexed entries</p>
